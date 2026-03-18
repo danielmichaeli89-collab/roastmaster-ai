@@ -4,7 +4,8 @@ import {
   generateRoastProfile,
   analyzeRoastRealtime,
   postRoastAnalysis,
-  bigDataInsights
+  bigDataInsights,
+  optimizeProfileFromHistory
 } from '../services/ai.service.js';
 
 /**
@@ -379,6 +380,111 @@ export const compareRoasts = async (req, res) => {
     console.error('Comparative analysis error:', error);
     return res.status(500).json({
       error: 'Comparison failed',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * POST /api/ai/optimize-from-history
+ * Generate optimized profile suggestions based on historical roasts + cupping scores
+ * for a specific green coffee
+ */
+export const optimizeFromHistory = async (req, res) => {
+  const { coffee_id, limit = 10 } = req.body;
+
+  if (!coffee_id) {
+    return res.status(400).json({ error: 'Green coffee ID required' });
+  }
+
+  try {
+    const coffee = await db('green_coffees')
+      .where('id', coffee_id)
+      .andWhere('user_id', req.user.id)
+      .first();
+
+    if (!coffee) {
+      return res.status(404).json({ error: 'Green coffee not found' });
+    }
+
+    // Fetch last N roasts of this coffee with their cupping scores
+    const roasts = await db('roasts')
+      .where('green_coffee_id', coffee_id)
+      .andWhere('user_id', req.user.id)
+      .orderBy('created_at', 'desc')
+      .limit(parseInt(limit) || 10);
+
+    if (roasts.length < 2) {
+      return res.status(400).json({
+        error: 'Insufficient roast history for optimization',
+        minimum_required: 2,
+        available: roasts.length,
+        message: 'Need at least 2 prior roasts to learn from'
+      });
+    }
+
+    // Enrich roasts with cupping scores
+    const enrichedRoasts = await Promise.all(
+      roasts.map(async (roast) => {
+        const cupping = await db('cupping_notes')
+          .where('roast_id', roast.id)
+          .first();
+        return {
+          ...roast,
+          cupping_score: cupping?.total_score || null,
+          cupping_notes: cupping || null
+        };
+      })
+    );
+
+    // Call AI service to optimize profile
+    const optimization = await optimizeProfileFromHistory(
+      coffee,
+      enrichedRoasts
+    );
+
+    if (optimization.error) {
+      return res.status(500).json({
+        error: optimization.error,
+        message: 'Failed to generate optimization suggestions'
+      });
+    }
+
+    // Store any learnings in roast_learnings table
+    if (optimization.learnings && optimization.learnings.length > 0) {
+      for (const learning of optimization.learnings) {
+        await db('roast_learnings').insert({
+          id: uuidv4(),
+          coffee_id: coffee_id,
+          roast_id: enrichedRoasts[0].id, // Primary roast (most recent)
+          cupping_id: enrichedRoasts[0].cupping_notes?.id || null,
+          learning_type: learning.learning_type,
+          parameter_key: learning.parameter_key,
+          parameter_value: learning.parameter_value,
+          quality_impact: learning.quality_impact,
+          confidence: learning.confidence,
+          insight_text: learning.insight_text,
+          actionable: learning.actionable !== false,
+          applied: false,
+          created_at: new Date()
+        });
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      coffee_id: coffee_id,
+      roasts_analyzed: enrichedRoasts.length,
+      optimized_profile: optimization.optimized_profile,
+      recommendations: optimization.recommendations,
+      learnings_stored: optimization.learnings?.length || 0,
+      confidence_score: optimization.confidence_score,
+      next_actions: optimization.next_actions
+    });
+  } catch (error) {
+    console.error('Profile optimization error:', error);
+    return res.status(500).json({
+      error: 'Failed to optimize profile',
       message: error.message
     });
   }

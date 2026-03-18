@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+// Support production Railway URL
+const API_URL = import.meta.env.VITE_API_URL || 'https://roastmaster-ai-production.up.railway.app'
 
 const client: AxiosInstance = axios.create({
   baseURL: `${API_URL}/api`,

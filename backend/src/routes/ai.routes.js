@@ -4,7 +4,8 @@ import {
   generateProfile,
   checkRealtime,
   compareRoasts,
-  getInsights
+  getInsights,
+  optimizeFromHistory
 } from '../controllers/ai.controller.js';
 import { authenticateToken } from '../middleware/auth.js';
 
@@ -28,5 +29,8 @@ router.post('/analyze-roast', authenticateToken, analyzeRoast);
 // Comparative analysis and insights
 router.post('/insights', authenticateToken, getInsights);
 router.post('/compare-roasts', authenticateToken, compareRoasts);
+
+// Profile optimization from historical roasts
+router.post('/optimize-from-history', authenticateToken, optimizeFromHistory);
 
 export default router;

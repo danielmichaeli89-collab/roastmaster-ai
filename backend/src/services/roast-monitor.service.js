@@ -543,6 +543,170 @@ export class RoastMonitor {
       anomalies: this.anomalies.slice(-10) // Last 10 anomalies
     };
   }
+
+  /**
+   * Get structured phase data for storage in roast_phases table
+   * Extracts detailed metrics for each completed phase
+   */
+  getPhaseData() {
+    const phaseMetrics = [];
+
+    // Define phases in order
+    const phaseSequence = ['drying', 'yellowing', 'browning', 'first_crack', 'development'];
+
+    for (let i = 0; i < this.phaseTransitions.length; i++) {
+      const currentPhase = this.phaseTransitions[i];
+      const nextPhase = this.phaseTransitions[i + 1];
+
+      const startTime = currentPhase.elapsed_seconds;
+      const endTime = nextPhase ? nextPhase.elapsed_seconds : this.dataPoints[this.dataPoints.length - 1]?.elapsed_seconds || startTime;
+      const duration = endTime - startTime;
+
+      // Find all data points in this phase
+      const phaseData = this.dataPoints.filter(
+        p => p.elapsed_seconds >= startTime && p.elapsed_seconds <= endTime
+      );
+
+      if (phaseData.length > 0) {
+        // Calculate averages for phase
+        const avgPower = (phaseData.reduce((sum, p) => sum + (p.power_pct || 0), 0) / phaseData.length).toFixed(1);
+        const avgAirflow = (phaseData.reduce((sum, p) => sum + (p.airflow_pct || 0), 0) / phaseData.length).toFixed(1);
+        const avgRpm = (phaseData.reduce((sum, p) => sum + (p.rpm || 0), 0) / phaseData.length).toFixed(1);
+
+        // RoR metrics
+        const phaseRoR = phaseData.map(p => p.ror_bt || 0);
+        const avgRoR = (phaseRoR.reduce((a, b) => a + b, 0) / phaseRoR.length).toFixed(2);
+        const peakRoR = Math.max(...phaseRoR).toFixed(2);
+        const minRoR = Math.min(...phaseRoR).toFixed(2);
+
+        // Determine RoR trend
+        let rorTrend = 'stable';
+        if (phaseRoR.length > 2) {
+          const first = phaseRoR[0];
+          const last = phaseRoR[phaseRoR.length - 1];
+          const change = last - first;
+
+          if (change < -1) rorTrend = 'declining';
+          else if (change > 1) rorTrend = 'increasing';
+
+          // Check for erratic behavior
+          let variance = 0;
+          for (let j = 1; j < phaseRoR.length; j++) {
+            variance += Math.abs(phaseRoR[j] - phaseRoR[j - 1]);
+          }
+          if (variance > phaseRoR.length * 2) rorTrend = 'erratic';
+        }
+
+        phaseMetrics.push({
+          phase_name: currentPhase.phase || 'unknown',
+          phase_order: phaseSequence.indexOf(currentPhase.phase || 'unknown') + 1,
+          start_time_seconds: startTime,
+          end_time_seconds: endTime,
+          duration_seconds: duration,
+          start_temp_bt: currentPhase.temp || null,
+          end_temp_bt: nextPhase?.temp || null,
+          avg_power_pct: parseFloat(avgPower),
+          avg_airflow_pct: parseFloat(avgAirflow),
+          avg_rpm: parseFloat(avgRpm),
+          avg_ror: parseFloat(avgRoR),
+          peak_ror: parseFloat(peakRoR),
+          min_ror: parseFloat(minRoR),
+          ror_trend: rorTrend,
+          anomaly_count: this.anomalies.filter(
+            a => a.elapsed_seconds >= startTime && a.elapsed_seconds <= endTime
+          ).length
+        });
+      }
+    }
+
+    return phaseMetrics;
+  }
+
+  /**
+   * Calculate RoR smoothness score (0-100)
+   * Evaluates the quality of the RoR curve: smoother = higher score
+   * Penalizes crashes, flicks, and stalls
+   */
+  getRoRSmoothnessScore() {
+    if (this.rorHistory.length < 3) {
+      return 0;
+    }
+
+    let score = 100;
+
+    // Count and penalize RoR defects from anomalies
+    const rorDefects = this.anomalies.filter(
+      a => ['ror_crash', 'ror_flick', 'stalling', 'stalling_risk'].includes(a.anomaly_type)
+    );
+
+    // Penalize each type of defect
+    const crashes = rorDefects.filter(a => a.anomaly_type === 'ror_crash').length;
+    const flicks = rorDefects.filter(a => a.anomaly_type === 'ror_flick').length;
+    const stalls = rorDefects.filter(a => a.anomaly_type === 'stalling').length;
+    const stallRisks = rorDefects.filter(a => a.anomaly_type === 'stalling_risk').length;
+
+    score -= crashes * 15; // Major defect
+    score -= flicks * 10; // Moderate defect
+    score -= stalls * 20; // Critical defect
+    score -= stallRisks * 5; // Warning
+
+    // Penalize for high variance in RoR (indicates instability)
+    if (this.rorHistory.length > 5) {
+      const mean = this.rorHistory.reduce((a, b) => a + b, 0) / this.rorHistory.length;
+      const variance = this.rorHistory.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / this.rorHistory.length;
+      const stdDev = Math.sqrt(variance);
+
+      // High variance = less smooth
+      // Normalize to affect score more moderately
+      const variancePenalty = Math.min(20, (stdDev / 3) * 5);
+      score -= variancePenalty;
+    }
+
+    // Bonus for consistency over the roast
+    if (this.rorHistory.length > 10) {
+      let increasing = 0;
+      let decreasing = 0;
+      for (let i = 1; i < this.rorHistory.length; i++) {
+        if (this.rorHistory[i] > this.rorHistory[i - 1]) increasing++;
+        else if (this.rorHistory[i] < this.rorHistory[i - 1]) decreasing++;
+      }
+
+      // Prefer declining RoR (normal roasting curve)
+      if (decreasing > increasing) {
+        score += 5;
+      }
+    }
+
+    // Ensure score is in valid range
+    return Math.max(0, Math.min(100, score));
+  }
+
+  /**
+   * Estimate energy consumption in watt-hours based on power usage and time
+   * Uses average power% from the roast and assumes roaster specs
+   */
+  getEnergyEstimate() {
+    if (this.dataPoints.length === 0) {
+      return 0;
+    }
+
+    // Get total roast time
+    const totalSeconds = this.dataPoints[this.dataPoints.length - 1].elapsed_seconds || 0;
+    const totalMinutes = totalSeconds / 60;
+    const totalHours = totalMinutes / 60;
+
+    // Calculate average power percentage
+    const avgPowerPct = this.dataPoints.reduce((sum, p) => sum + (p.power_pct || 0), 0) / this.dataPoints.length;
+
+    // Assume a Roest L200 Ultra uses ~3000W at 100% power (typical for a 1kg roaster)
+    const maxWattage = 3000;
+    const avgWattage = (avgPowerPct / 100) * maxWattage;
+
+    // Calculate watt-hours
+    const wattHours = avgWattage * totalHours;
+
+    return Math.round(wattHours * 100) / 100; // Round to 2 decimals
+  }
 }
 
 export default RoastMonitor;

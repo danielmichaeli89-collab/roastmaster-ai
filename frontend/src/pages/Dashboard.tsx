@@ -46,7 +46,24 @@ export const Dashboard: React.FC = () => {
         setRecentRoasts(roastsData.data)
         setTrendData(trendsData)
       } catch (err) {
-        toast.error('Failed to load dashboard data')
+        // Show demo data on error
+        console.error('Failed to load dashboard data:', err)
+        setStats({
+          totalRoasts: 24,
+          averageQualityRating: 7.8,
+          successRate: 0.92,
+          averageDevelopmentTime: 285,
+          averageFirstCrackTime: 185,
+          lastRoastDate: new Date().toISOString(),
+        })
+        setRecentRoasts([])
+        setTrendData(
+          Array.from({ length: 12 }, (_, i) => ({
+            date: `Day ${i + 1}`,
+            score: 7 + Math.random() * 2,
+          }))
+        )
+        toast.success('Showing demo data')
       } finally {
         setIsLoading(false)
       }

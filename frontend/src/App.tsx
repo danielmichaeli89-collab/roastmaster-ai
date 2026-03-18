@@ -14,6 +14,7 @@ import {
   Analytics,
   CuppingForm,
   Settings,
+  ImportCSV,
 } from './pages'
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -120,6 +121,15 @@ export const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <Settings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/import-csv"
+          element={
+            <ProtectedRoute>
+              <ImportCSV />
             </ProtectedRoute>
           }
         />
