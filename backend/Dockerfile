@@ -3,11 +3,11 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package*.json ./
+COPY knexfile.js ./
 
 RUN npm ci --omit=dev
 
-COPY src ./src
-COPY knexfile.js .
+COPY . .
 
 EXPOSE 3000
 
