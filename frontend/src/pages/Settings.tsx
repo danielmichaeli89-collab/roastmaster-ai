@@ -62,20 +62,20 @@ export const Settings: React.FC = () => {
     <Layout>
       <div className="space-y-6 max-w-2xl">
         <div>
-          <h2 className="text-3xl font-bold text-amber-500">Settings</h2>
-          <p className="text-espresso-400 mt-1">Manage your account and preferences</p>
+          <h2 className="text-3xl font-bold text-accent-amber">Settings</h2>
+          <p className="text-text-secondary mt-1">Manage your account and preferences</p>
         </div>
 
         {/* Profile section */}
-        <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6 space-y-4">
+        <div className="bg-card border border-elevated rounded-lg p-6 space-y-4">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-amber-500">Account Information</h3>
+            <h3 className="text-xl font-semibold text-accent-amber">Account Information</h3>
             <button
               onClick={() => setIsEditing(!isEditing)}
               className={`px-4 py-2 rounded-lg transition ${
                 isEditing
-                  ? 'bg-espresso-800 border border-espresso-700'
-                  : 'bg-amber-900/50 border border-amber-500'
+                  ? 'bg-elevated border border-elevated'
+                  : 'bg-accent-amber/20 border border-accent-amber'
               }`}
             >
               {isEditing ? 'Cancel' : 'Edit'}
@@ -84,18 +84,18 @@ export const Settings: React.FC = () => {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-espresso-300 mb-2">Email</label>
+              <label className="block text-sm font-medium text-text-primary mb-2">Email</label>
               <input
                 type="email"
                 value={user?.email || ''}
                 disabled
-                className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-500 cursor-not-allowed"
+                className="w-full px-4 py-2 bg-elevated border border-elevated rounded-lg text-text-muted cursor-not-allowed"
               />
-              <p className="text-espresso-500 text-xs mt-1">Email cannot be changed</p>
+              <p className="text-text-muted text-xs mt-1">Email cannot be changed</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-espresso-300 mb-2">Full Name</label>
+              <label className="block text-sm font-medium text-text-primary mb-2">Full Name</label>
               <input
                 type="text"
                 value={profileData.fullName}
@@ -103,14 +103,14 @@ export const Settings: React.FC = () => {
                   setProfileData((prev) => ({ ...prev, fullName: e.target.value }))
                 }
                 disabled={!isEditing}
-                className={`w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500 ${
+                className={`w-full px-4 py-2 bg-elevated border border-elevated rounded-lg text-text-primary focus:outline-none focus:border-accent-amber ${
                   !isEditing && 'cursor-not-allowed'
                 }`}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-espresso-300 mb-2">
+              <label className="block text-sm font-medium text-text-primary mb-2">
                 Organization Name
               </label>
               <input
@@ -120,14 +120,14 @@ export const Settings: React.FC = () => {
                   setProfileData((prev) => ({ ...prev, organizationName: e.target.value }))
                 }
                 disabled={!isEditing}
-                className={`w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500 ${
+                className={`w-full px-4 py-2 bg-elevated border border-elevated rounded-lg text-text-primary focus:outline-none focus:border-accent-amber ${
                   !isEditing && 'cursor-not-allowed'
                 }`}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-espresso-300 mb-2">
+              <label className="block text-sm font-medium text-text-primary mb-2">
                 ROEST Serial Number
               </label>
               <input
@@ -137,7 +137,7 @@ export const Settings: React.FC = () => {
                   setProfileData((prev) => ({ ...prev, roesterSerialNumber: e.target.value }))
                 }
                 disabled={!isEditing}
-                className={`w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500 ${
+                className={`w-full px-4 py-2 bg-elevated border border-elevated rounded-lg text-text-primary focus:outline-none focus:border-accent-amber ${
                   !isEditing && 'cursor-not-allowed'
                 }`}
               />
@@ -157,11 +157,11 @@ export const Settings: React.FC = () => {
         </div>
 
         {/* Security section */}
-        <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6 space-y-4">
-          <h3 className="text-xl font-semibold text-amber-500 mb-6">Change Password</h3>
+        <div className="bg-card border border-elevated rounded-lg p-6 space-y-4">
+          <h3 className="text-xl font-semibold text-accent-amber mb-6">Change Password</h3>
 
           <div>
-            <label className="block text-sm font-medium text-espresso-300 mb-2">
+            <label className="block text-sm font-medium text-text-primary mb-2">
               Current Password
             </label>
             <div className="relative">
@@ -171,12 +171,12 @@ export const Settings: React.FC = () => {
                 onChange={(e) =>
                   setPasswordData((prev) => ({ ...prev, oldPassword: e.target.value }))
                 }
-                className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 placeholder-espresso-500 focus:outline-none focus:border-amber-500 pr-10"
+                className="w-full px-4 py-2 bg-elevated border border-elevated rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-amber pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-espresso-400 hover:text-espresso-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -184,7 +184,7 @@ export const Settings: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-espresso-300 mb-2">
+            <label className="block text-sm font-medium text-text-primary mb-2">
               New Password
             </label>
             <input
@@ -193,13 +193,13 @@ export const Settings: React.FC = () => {
               onChange={(e) =>
                 setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))
               }
-              className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 placeholder-espresso-500 focus:outline-none focus:border-amber-500"
+              className="w-full px-4 py-2 bg-elevated border border-elevated rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-amber"
             />
-            <p className="text-espresso-500 text-xs mt-1">At least 8 characters</p>
+            <p className="text-text-muted text-xs mt-1">At least 8 characters</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-espresso-300 mb-2">
+            <label className="block text-sm font-medium text-text-primary mb-2">
               Confirm New Password
             </label>
             <input
@@ -208,48 +208,48 @@ export const Settings: React.FC = () => {
               onChange={(e) =>
                 setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))
               }
-              className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 placeholder-espresso-500 focus:outline-none focus:border-amber-500"
+              className="w-full px-4 py-2 bg-elevated border border-elevated rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-amber"
             />
           </div>
 
           <button
             onClick={handleChangePassword}
             disabled={isSaving || !passwordData.oldPassword || !passwordData.newPassword}
-            className="w-full px-4 py-2 bg-warning-600 text-white rounded-lg hover:bg-warning-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+            className="w-full px-4 py-2 bg-warning-600 text-white rounded-lg hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
           >
             {isSaving ? 'Updating...' : 'Update Password'}
           </button>
         </div>
 
         {/* Preferences section */}
-        <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6 space-y-4">
-          <h3 className="text-xl font-semibold text-amber-500 mb-6">Preferences</h3>
+        <div className="bg-card border border-elevated rounded-lg p-6 space-y-4">
+          <h3 className="text-xl font-semibold text-accent-amber mb-6">Preferences</h3>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-espresso-800 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-elevated rounded-lg">
               <div>
-                <p className="font-semibold text-espresso-100">Dark Mode</p>
-                <p className="text-espresso-400 text-sm">Always enabled for this app</p>
+                <p className="font-semibold text-text-primary">Dark Mode</p>
+                <p className="text-text-secondary text-sm">Always enabled for this app</p>
               </div>
               <div className="w-12 h-6 bg-amber-600 rounded-full relative">
                 <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-espresso-800 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-elevated rounded-lg">
               <div>
-                <p className="font-semibold text-espresso-100">Email Notifications</p>
-                <p className="text-espresso-400 text-sm">Receive updates on roast completion</p>
+                <p className="font-semibold text-text-primary">Email Notifications</p>
+                <p className="text-text-secondary text-sm">Receive updates on roast completion</p>
               </div>
               <div className="w-12 h-6 bg-espresso-700 rounded-full relative cursor-pointer">
                 <div className="absolute left-1 top-1 w-4 h-4 bg-espresso-500 rounded-full" />
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-espresso-800 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-elevated rounded-lg">
               <div>
-                <p className="font-semibold text-espresso-100">RTL Support</p>
-                <p className="text-espresso-400 text-sm">Right-to-left interface layout</p>
+                <p className="font-semibold text-text-primary">RTL Support</p>
+                <p className="text-text-secondary text-sm">Right-to-left interface layout</p>
               </div>
               <div className="w-12 h-6 bg-espresso-700 rounded-full relative cursor-pointer">
                 <div className="absolute left-1 top-1 w-4 h-4 bg-espresso-500 rounded-full" />
@@ -259,13 +259,13 @@ export const Settings: React.FC = () => {
         </div>
 
         {/* Danger zone */}
-        <div className="bg-error-900/20 border border-error-500 rounded-lg p-6 space-y-4">
-          <h3 className="text-lg font-semibold text-error-400">Danger Zone</h3>
+        <div className="bg-danger/20 border border-danger rounded-lg p-6 space-y-4">
+          <h3 className="text-lg font-semibold text-danger">Danger Zone</h3>
 
-          <button className="w-full px-4 py-2 bg-error-600 text-white rounded-lg hover:bg-error-700 transition font-semibold">
+          <button className="w-full px-4 py-2 bg-danger text-white rounded-lg hover:shadow-lg transition font-semibold">
             Delete Account
           </button>
-          <p className="text-error-400 text-xs">
+          <p className="text-danger text-xs">
             Permanently delete your account and all associated data. This cannot be undone.
           </p>
         </div>

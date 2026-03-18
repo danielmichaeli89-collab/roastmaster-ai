@@ -1,6 +1,15 @@
 import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Upload, BookPlus, Flame, Star, CheckCircle, Clock } from 'lucide-react'
+import {
+  Upload,
+  BookPlus,
+  Flame,
+  Star,
+  CheckCircle,
+  Clock,
+  TrendingUp,
+  Database,
+} from 'lucide-react'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import {
@@ -56,116 +65,150 @@ export const Dashboard: React.FC = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Quick actions */}
+      <div className="space-y-8">
+        {/* Quick action buttons */}
         <div className="flex gap-3 flex-wrap">
           <button
             onClick={() => navigate('/monitor')}
-            className="px-6 py-3 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg font-semibold hover:shadow-lg transition flex items-center gap-2"
+            className="px-6 py-3 bg-gradient-to-r from-accent-amber to-accent-gold text-primary rounded-lg font-semibold hover:shadow-elevation transition-all duration-200 flex items-center gap-2 group"
           >
-            <Plus size={20} />
+            <Flame size={20} className="group-hover:animate-pulse" />
             Start New Roast
           </button>
           <button
             onClick={() => navigate('/history')}
-            className="px-6 py-3 bg-espresso-800 border border-espresso-700 text-espresso-100 rounded-lg font-semibold hover:border-amber-500 transition flex items-center gap-2"
+            className="px-6 py-3 glass-card border border-accent-amber border-opacity-20 text-text-primary rounded-lg font-semibold hover:border-opacity-40 transition-all duration-200 flex items-center gap-2"
           >
             <Upload size={20} />
             Import CSV
           </button>
           <button
-            onClick={() => navigate('/profiles')}
-            className="px-6 py-3 bg-espresso-800 border border-espresso-700 text-espresso-100 rounded-lg font-semibold hover:border-amber-500 transition flex items-center gap-2"
+            onClick={() => navigate('/profiles/new')}
+            className="px-6 py-3 glass-card border border-accent-amber border-opacity-20 text-text-primary rounded-lg font-semibold hover:border-opacity-40 transition-all duration-200 flex items-center gap-2"
           >
             <BookPlus size={20} />
-            New Profile
+            Create AI Profile
           </button>
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats && (
             <>
               <StatCard
-                icon={Flame}
+                icon={<Flame size={24} />}
                 title="Total Roasts"
                 value={stats.totalRoasts}
-                subtitle="all time"
+                unit="roasts"
+                trend={{ value: 12, isPositive: true }}
               />
               <StatCard
-                icon={Star}
+                icon={<Star size={24} />}
                 title="Average Quality"
                 value={stats.averageQualityRating.toFixed(1)}
-                subtitle="out of 10"
+                unit="/ 10"
+                trend={{ value: 5, isPositive: true }}
               />
               <StatCard
-                icon={CheckCircle}
+                icon={<CheckCircle size={24} />}
                 title="Success Rate"
-                value={`${(stats.successRate * 100).toFixed(1)}%`}
-                subtitle="successful roasts"
+                value={`${(stats.successRate * 100).toFixed(0)}%`}
+                trend={{ value: 3, isPositive: true }}
               />
               <StatCard
-                icon={Clock}
+                icon={<Clock size={24} />}
                 title="Avg Dev Time"
-                value={`${stats.averageDevelopmentTime.toFixed(1)}s`}
-                subtitle="development phase"
+                value={stats.averageDevelopmentTime.toFixed(0)}
+                unit="s"
+                trend={{ value: 2, isPositive: false }}
               />
             </>
           )}
         </div>
 
-        {/* Charts */}
+        {/* Charts section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Quality trends */}
-          <div className="lg:col-span-2 bg-espresso-900 border border-espresso-800 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-amber-500 mb-4">Quality Trends</h3>
+          {/* Quality trends - main chart */}
+          <div className="lg:col-span-2 glass-card border border-accent-amber border-opacity-10 rounded-xl p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-text-primary">Quality Trends</h3>
+                <p className="text-text-muted text-sm mt-1">Last 30 roasts</p>
+              </div>
+              <TrendingUp size={24} className="text-success" />
+            </div>
             {trendData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#3d3d3d" />
-                  <XAxis dataKey="date" stroke="#666" />
-                  <YAxis stroke="#666" />
+                <LineChart data={trendData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="date" stroke="rgba(255,255,255,0.3)" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="rgba(255,255,255,0.3)" style={{ fontSize: '12px' }} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1c1c1c', border: '1px solid #d2691e' }}
+                    contentStyle={{
+                      backgroundColor: '#141414',
+                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                      borderRadius: '8px',
+                    }}
+                    labelStyle={{ color: '#fafafa' }}
                   />
                   <Line
                     type="monotone"
                     dataKey="score"
-                    stroke="#fbbf24"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
                     dot={false}
-                    isAnimationActive={false}
+                    isAnimationActive={true}
+                    animationDuration={800}
                   />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-espresso-400 text-center py-8">No data available</p>
+              <div className="h-80 flex items-center justify-center text-text-muted">
+                No quality data available yet
+              </div>
             )}
           </div>
 
-          {/* Last roast */}
+          {/* Last roast card */}
           {recentRoasts.length > 0 && (
-            <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-amber-500 mb-4">Last Roast</h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-espresso-400 text-sm">Batch</p>
-                  <p className="text-espresso-100 font-semibold">{recentRoasts[0].batchNumber}</p>
+            <div className="glass-card border border-accent-amber border-opacity-10 rounded-xl p-8">
+              <div className="flex items-center gap-2 mb-6">
+                <Flame size={20} className="text-accent-amber" />
+                <h3 className="text-xl font-bold text-text-primary">Last Roast</h3>
+              </div>
+
+              <div className="space-y-4">
+                <div className="pb-4 border-b border-elevated">
+                  <p className="text-text-muted text-sm mb-1">Batch Number</p>
+                  <p className="text-text-primary font-semibold">{recentRoasts[0].batchNumber}</p>
                 </div>
-                <div>
-                  <p className="text-espresso-400 text-sm">Origin</p>
-                  <p className="text-espresso-100 font-semibold">{recentRoasts[0].coffeeOrigin}</p>
+
+                <div className="pb-4 border-b border-elevated">
+                  <p className="text-text-muted text-sm mb-1">Origin</p>
+                  <p className="text-text-primary font-semibold">{recentRoasts[0].coffeeOrigin}</p>
                 </div>
-                <div>
-                  <p className="text-espresso-400 text-sm">Quality Rating</p>
-                  <p className="text-amber-500 font-semibold">
-                    {recentRoasts[0].qualityRating ? `${recentRoasts[0].qualityRating}/10` : 'Not rated'}
-                  </p>
+
+                <div className="pb-4">
+                  <p className="text-text-muted text-sm mb-1">Quality Rating</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-accent-amber font-bold text-2xl">
+                      {recentRoasts[0].qualityRating ? recentRoasts[0].qualityRating.toFixed(1) : '-'}
+                    </p>
+                    <p className="text-text-muted">/10</p>
+                  </div>
                 </div>
+
                 <button
                   onClick={() => navigate(`/history?roastId=${recentRoasts[0].id}`)}
-                  className="w-full mt-4 px-4 py-2 bg-amber-900/50 border border-amber-500 text-amber-400 rounded-lg hover:bg-amber-900 transition"
+                  className="w-full mt-6 px-4 py-2 bg-accent-amber bg-opacity-10 border border-accent-amber border-opacity-20 text-accent-amber rounded-lg hover:bg-opacity-20 hover:border-opacity-40 transition-all duration-200 font-medium text-sm"
                 >
-                  View Details
+                  View Full Details
                 </button>
               </div>
             </div>
@@ -173,37 +216,63 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Recent roasts table */}
-        <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-amber-500 mb-4">Recent Roasts</h3>
+        <div className="glass-card border border-accent-amber border-opacity-10 rounded-xl p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-xl font-bold text-text-primary">Recent Roasts</h3>
+              <p className="text-text-muted text-sm mt-1">Your last 5 roasts</p>
+            </div>
+            <Database size={24} className="text-text-muted" />
+          </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full">
               <thead>
-                <tr className="border-b border-espresso-700">
-                  <th className="text-left py-3 px-4 text-espresso-400">Batch</th>
-                  <th className="text-left py-3 px-4 text-espresso-400">Origin</th>
-                  <th className="text-left py-3 px-4 text-espresso-400">Level</th>
-                  <th className="text-left py-3 px-4 text-espresso-400">Quality</th>
-                  <th className="text-left py-3 px-4 text-espresso-400">Date</th>
+                <tr className="border-b border-elevated">
+                  <th className="text-left py-4 px-4 text-text-muted font-semibold text-sm">Batch</th>
+                  <th className="text-left py-4 px-4 text-text-muted font-semibold text-sm">Origin</th>
+                  <th className="text-left py-4 px-4 text-text-muted font-semibold text-sm">Level</th>
+                  <th className="text-left py-4 px-4 text-text-muted font-semibold text-sm">Quality</th>
+                  <th className="text-left py-4 px-4 text-text-muted font-semibold text-sm">Date</th>
+                  <th className="text-left py-4 px-4 text-text-muted font-semibold text-sm">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {recentRoasts.map((roast) => (
                   <tr
                     key={roast.id}
-                    className="border-b border-espresso-800 hover:bg-espresso-800/50 transition"
+                    className="border-b border-elevated hover:bg-elevated hover:bg-opacity-30 transition-colors duration-200 cursor-pointer"
+                    onClick={() => navigate(`/history?roastId=${roast.id}`)}
                   >
-                    <td className="py-3 px-4 font-semibold text-amber-500">{roast.batchNumber}</td>
-                    <td className="py-3 px-4 text-espresso-300">{roast.coffeeOrigin}</td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-1 bg-espresso-800 rounded text-espresso-300 text-xs">
+                    <td className="py-4 px-4">
+                      <p className="font-semibold text-accent-amber">{roast.batchNumber}</p>
+                    </td>
+                    <td className="py-4 px-4 text-text-primary">{roast.coffeeOrigin}</td>
+                    <td className="py-4 px-4">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-accent-amber bg-opacity-10 text-accent-amber">
                         {roast.roastLevel || 'N/A'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-amber-500">
-                      {roast.qualityRating ? `${roast.qualityRating}/10` : 'N/A'}
+                    <td className="py-4 px-4">
+                      <p className="font-semibold text-accent-gold">
+                        {roast.qualityRating ? `${roast.qualityRating.toFixed(1)}/10` : 'Unrated'}
+                      </p>
                     </td>
-                    <td className="py-3 px-4 text-espresso-400">
+                    <td className="py-4 px-4 text-text-muted text-sm">
                       {new Date(roast.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-4 px-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          roast.isSuccess
+                            ? 'bg-success bg-opacity-10 text-success'
+                            : roast.isSuccess === false
+                              ? 'bg-danger bg-opacity-10 text-danger'
+                              : 'bg-warning bg-opacity-10 text-warning'
+                        }`}
+                      >
+                        {roast.isSuccess ? 'Success' : roast.isSuccess === false ? 'Failed' : 'Unknown'}
+                      </span>
                     </td>
                   </tr>
                 ))}

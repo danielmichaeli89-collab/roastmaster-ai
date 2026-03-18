@@ -1,4 +1,5 @@
 import React from 'react'
+import { Coffee } from 'lucide-react'
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg'
@@ -6,9 +7,9 @@ interface LoadingSpinnerProps {
 }
 
 const sizeClasses = {
-  sm: 'w-6 h-6',
-  md: 'w-10 h-10',
-  lg: 'w-16 h-16',
+  sm: 'w-8 h-8',
+  md: 'w-12 h-12',
+  lg: 'w-20 h-20',
 }
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
@@ -16,13 +17,18 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   message = 'Loading...',
 }) => {
   return (
-    <div className="flex flex-col items-center justify-center p-8">
-      <div
-        className={`${sizeClasses[size]} border-4 border-espresso-700 border-t-amber-500 rounded-full animate-spin`}
-      />
+    <div className="flex flex-col items-center justify-center p-12 min-h-screen">
+      <div className={`${sizeClasses[size]} mb-6 text-accent-amber animate-pulse-glow`}>
+        <Coffee className={`${sizeClasses[size]} animate-spin`} style={{ animationDuration: '2s' }} />
+      </div>
       {message && (
-        <p className="mt-4 text-espresso-300 text-sm">{message}</p>
+        <p className="mt-4 text-text-muted text-sm font-medium">{message}</p>
       )}
+      <div className="mt-8 flex gap-2">
+        <div className="w-2 h-2 rounded-full bg-accent-amber animate-pulse" />
+        <div className="w-2 h-2 rounded-full bg-accent-amber animate-pulse" style={{ animationDelay: '0.2s' }} />
+        <div className="w-2 h-2 rounded-full bg-accent-amber animate-pulse" style={{ animationDelay: '0.4s' }} />
+      </div>
     </div>
   )
 }

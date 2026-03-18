@@ -82,7 +82,7 @@ export const CuppingForm: React.FC = () => {
   const getScoreColor = (score: number) => {
     if (score >= 9) return 'text-success-500'
     if (score >= 8) return 'text-green-500'
-    if (score >= 7) return 'text-amber-500'
+    if (score >= 7) return 'text-accent-amber'
     return 'text-warning-500'
   }
 
@@ -90,20 +90,20 @@ export const CuppingForm: React.FC = () => {
     <Layout>
       <div className="space-y-6 max-w-6xl">
         <div>
-          <h2 className="text-3xl font-bold text-amber-500">SCA Cupping Form</h2>
-          <p className="text-espresso-400 mt-1">Score and analyze this coffee's sensory profile</p>
+          <h2 className="text-3xl font-bold text-accent-amber">SCA Cupping Form</h2>
+          <p className="text-text-secondary mt-1">Score and analyze this coffee's sensory profile</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Scoring panel */}
           <div className="lg:col-span-2 space-y-6">
             {/* Basic Info */}
-            <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6 space-y-4">
-              <h3 className="text-amber-500 font-semibold text-lg">Cupping Info</h3>
+            <div className="bg-card rounded-xl border border-elevated p-6 space-y-4">
+              <h3 className="text-accent-amber font-bold text-lg">Cupping Info</h3>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-espresso-300 mb-2">
+                  <label className="block text-sm font-medium text-text-primary mb-2">
                     Cupper Name
                   </label>
                   <input
@@ -113,12 +113,12 @@ export const CuppingForm: React.FC = () => {
                       setFormData((prev) => ({ ...prev, cupperName: e.target.value }))
                     }
                     placeholder="Your name"
-                    className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 placeholder-espresso-500 focus:outline-none focus:border-amber-500"
+                    className="w-full px-4 py-2 bg-elevated border border-elevated rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-amber"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-espresso-300 mb-2">
+                  <label className="block text-sm font-medium text-text-primary mb-2">
                     Mouth Feel
                   </label>
                   <select
@@ -126,7 +126,7 @@ export const CuppingForm: React.FC = () => {
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, mouthFeel: e.target.value }))
                     }
-                    className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-4 py-2 bg-elevated border border-elevated rounded-lg text-text-primary focus:outline-none focus:border-accent-amber"
                   >
                     <option value="light">Light</option>
                     <option value="medium">Medium</option>
@@ -137,7 +137,7 @@ export const CuppingForm: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-espresso-300 mb-2">
+                <label className="block text-sm font-medium text-text-primary mb-2">
                   Tasting Notes
                 </label>
                 <textarea
@@ -147,14 +147,14 @@ export const CuppingForm: React.FC = () => {
                   }
                   placeholder="Describe the tasting experience..."
                   rows={3}
-                  className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 placeholder-espresso-500 focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-2 bg-elevated border border-elevated rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-amber"
                 />
               </div>
             </div>
 
             {/* Scores Grid */}
-            <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6 space-y-4">
-              <h3 className="text-amber-500 font-semibold text-lg">SCA Scores (0-10)</h3>
+            <div className="bg-card border border-elevated rounded-lg p-6 space-y-4">
+              <h3 className="text-accent-amber font-semibold text-lg">SCA Scores (0-10)</h3>
 
               <div className="grid grid-cols-2 gap-4">
                 {[
@@ -171,7 +171,7 @@ export const CuppingForm: React.FC = () => {
                 ].map((key) => (
                   <div key={key}>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-medium text-espresso-300 capitalize">
+                      <label className="text-sm font-medium text-text-primary capitalize">
                         {key.replace(/([A-Z])/g, ' $1')}
                       </label>
                       <span className={`font-bold ${getScoreColor(formData[key as keyof typeof formData] as number)}`}>
@@ -196,8 +196,8 @@ export const CuppingForm: React.FC = () => {
                 ))}
               </div>
 
-              <div className="pt-4 border-t border-espresso-700">
-                <label className="text-sm font-medium text-espresso-300 mb-2 block">
+              <div className="pt-4 border-t border-elevated">
+                <label className="text-sm font-medium text-text-primary mb-2 block">
                   Defects (deduct points)
                 </label>
                 <input
@@ -211,7 +211,7 @@ export const CuppingForm: React.FC = () => {
                   }
                   className="w-full"
                 />
-                <p className="text-espresso-400 text-xs mt-1">-{formData.defects} points</p>
+                <p className="text-text-secondary text-xs mt-1">-{formData.defects} points</p>
               </div>
             </div>
 
@@ -222,10 +222,10 @@ export const CuppingForm: React.FC = () => {
           {/* Right column: Score display and radar */}
           <div className="space-y-6">
             {/* Total score */}
-            <div className="bg-gradient-to-br from-amber-900/50 to-orange-900/50 border border-amber-500 rounded-lg p-6 text-center">
-              <p className="text-amber-400 text-sm font-semibold mb-2">Total Score</p>
-              <p className="text-5xl font-bold text-amber-500 mb-3">{totalScore.toFixed(2)}</p>
-              <p className="text-espresso-300 text-sm">
+            <div className="bg-gradient-to-br from-amber-900/50 to-orange-900/50 border border-accent-amber rounded-lg p-6 text-center">
+              <p className="text-accent-gold text-sm font-semibold mb-2">Total Score</p>
+              <p className="text-5xl font-bold text-accent-amber mb-3">{totalScore.toFixed(2)}</p>
+              <p className="text-text-primary text-sm">
                 {totalScore >= 90
                   ? '⭐⭐⭐ Exceptional'
                   : totalScore >= 85

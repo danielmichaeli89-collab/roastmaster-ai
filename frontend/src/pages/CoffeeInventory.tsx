@@ -11,6 +11,7 @@ export const CoffeeInventory: React.FC = () => {
   const [showModal, setShowModal] = useState(false)
   const [selectedCoffee, setSelectedCoffee] = useState<GreenCoffee | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
 
   const [formData, setFormData] = useState({
     coffeeName: '',
@@ -128,115 +129,176 @@ export const CoffeeInventory: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-amber-500">Coffee Inventory</h2>
-            <p className="text-espresso-400 mt-1">{filteredCoffees.length} coffees in stock</p>
+            <h2 className="text-3xl font-bold text-accent-amber">Coffee Inventory</h2>
+            <p className="text-text-secondary mt-1">{filteredCoffees.length} coffees in stock</p>
           </div>
           <button
             onClick={handleAddNew}
-            className="px-6 py-3 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg font-semibold hover:shadow-lg transition flex items-center gap-2"
+            className="px-6 py-3 bg-gradient-to-r from-accent-amber to-accent-gold text-primary rounded-lg font-semibold hover:shadow-lg transition flex items-center gap-2"
           >
             <Plus size={20} />
             Add Coffee
           </button>
         </div>
 
-        {/* Search */}
-        <input
-          type="text"
-          placeholder="Search by name or origin..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-6 py-3 bg-espresso-900 border border-espresso-800 rounded-lg text-espresso-100 placeholder-espresso-500 focus:outline-none focus:border-amber-500 transition"
-        />
-
-        {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCoffees.map((coffee) => (
-            <div key={coffee.id} className="relative group">
-              <CoffeeCard coffee={coffee} />
-              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                <button
-                  onClick={() => handleEdit(coffee)}
-                  className="p-2 bg-blue-600 hover:bg-blue-700 rounded-full text-white transition"
-                  title="Edit"
-                >
-                  <Edit2 size={16} />
-                </button>
-                <button
-                  onClick={() => handleDelete(coffee.id)}
-                  className="p-2 bg-error-600 hover:bg-error-700 rounded-full text-white transition"
-                  title="Delete"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
+        {/* Search and View Toggle */}
+        <div className="flex gap-3">
+          <input
+            type="text"
+            placeholder="Search by name or origin..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1 px-6 py-3 bg-card text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
+          />
+          <div className="flex gap-2 bg-card rounded-lg border border-elevated p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-4 py-2 rounded font-medium transition ${viewMode === 'grid' ? 'bg-accent-amber text-primary' : 'text-text-secondary'}`}
+            >
+              Grid
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-4 py-2 rounded font-medium transition ${viewMode === 'table' ? 'bg-accent-amber text-primary' : 'text-text-secondary'}`}
+            >
+              Table
+            </button>
+          </div>
         </div>
+
+        {/* Grid View */}
+        {viewMode === 'grid' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCoffees.map((coffee) => (
+              <div key={coffee.id} className="relative group">
+                <CoffeeCard coffee={coffee} />
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                  <button
+                    onClick={() => handleEdit(coffee)}
+                    className="p-2 bg-info hover:shadow-lg rounded-full text-white transition"
+                    title="Edit"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(coffee.id)}
+                    className="p-2 bg-danger hover:shadow-lg rounded-full text-white transition"
+                    title="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Table View */}
+        {viewMode === 'table' && (
+          <div className="bg-card rounded-xl border border-elevated overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-elevated border-b border-elevated">
+                <tr>
+                  <th className="text-left py-3 px-4 text-text-secondary font-semibold">Name</th>
+                  <th className="text-left py-3 px-4 text-text-secondary font-semibold">Origin</th>
+                  <th className="text-left py-3 px-4 text-text-secondary font-semibold">Processing</th>
+                  <th className="text-left py-3 px-4 text-text-secondary font-semibold">Qty (kg)</th>
+                  <th className="text-left py-3 px-4 text-text-secondary font-semibold">Moisture %</th>
+                  <th className="text-left py-3 px-4 text-text-secondary font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCoffees.map((coffee) => (
+                  <tr key={coffee.id} className="border-b border-elevated/50 hover:bg-elevated/50">
+                    <td className="py-3 px-4 text-text-primary font-medium">{coffee.coffeeName}</td>
+                    <td className="py-3 px-4 text-accent-gold">{coffee.originCountry} {coffee.originRegion && `- ${coffee.originRegion}`}</td>
+                    <td className="py-3 px-4 text-text-secondary">{coffee.processingMethod}</td>
+                    <td className="py-3 px-4 text-text-primary">{coffee.quantityKg.toFixed(1)}</td>
+                    <td className="py-3 px-4 text-text-primary">{coffee.moisturePercent.toFixed(1)}</td>
+                    <td className="py-3 px-4 flex gap-2">
+                      <button
+                        onClick={() => handleEdit(coffee)}
+                        className="p-1 hover:bg-info/20 rounded transition text-info"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(coffee.id)}
+                        className="p-1 hover:bg-danger/20 rounded transition text-danger"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Add/Edit Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-4">
-              <h3 className="text-xl font-bold text-amber-500">
+            <div className="bg-card border border-elevated rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-4">
+              <h3 className="text-xl font-bold text-accent-amber">
                 {selectedCoffee ? 'Edit Coffee' : 'Add Coffee'}
               </h3>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-espresso-300 mb-2">Coffee Name *</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Coffee Name</label>
                   <input
                     type="text"
                     value={formData.coffeeName}
                     onChange={(e) => setFormData((prev) => ({ ...prev, coffeeName: e.target.value }))}
-                    className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-4 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-espresso-300 mb-2">Country *</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Country</label>
                   <input
                     type="text"
                     value={formData.originCountry}
                     onChange={(e) => setFormData((prev) => ({ ...prev, originCountry: e.target.value }))}
-                    className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-4 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-espresso-300 mb-2">Region</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Region</label>
                   <input
                     type="text"
                     value={formData.originRegion}
                     onChange={(e) => setFormData((prev) => ({ ...prev, originRegion: e.target.value }))}
-                    className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-4 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-espresso-300 mb-2">Processing</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Processing</label>
                   <input
                     type="text"
                     value={formData.processingMethod}
                     onChange={(e) => setFormData((prev) => ({ ...prev, processingMethod: e.target.value }))}
                     placeholder="Washed, Natural, etc."
-                    className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-4 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-espresso-300 mb-2">Quantity (kg)</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Quantity (kg)</label>
                   <input
                     type="number"
                     step="0.1"
                     value={formData.quantityKg}
                     onChange={(e) => setFormData((prev) => ({ ...prev, quantityKg: Number(e.target.value) }))}
-                    className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-4 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-espresso-300 mb-2">Density (1-10)</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Density (1-10)</label>
                   <input
                     type="number"
                     min="1"
@@ -244,12 +306,12 @@ export const CoffeeInventory: React.FC = () => {
                     step="0.1"
                     value={formData.densityScore}
                     onChange={(e) => setFormData((prev) => ({ ...prev, densityScore: Number(e.target.value) }))}
-                    className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-4 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-espresso-300 mb-2">Moisture (%)</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Moisture (%)</label>
                   <input
                     type="number"
                     min="0"
@@ -257,17 +319,17 @@ export const CoffeeInventory: React.FC = () => {
                     step="0.1"
                     value={formData.moisturePercent}
                     onChange={(e) => setFormData((prev) => ({ ...prev, moisturePercent: Number(e.target.value) }))}
-                    className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-4 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
                   />
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-espresso-300 mb-2">Flavor Notes</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Flavor Notes</label>
                   <textarea
                     value={formData.expectedFlavorNotes}
                     onChange={(e) => setFormData((prev) => ({ ...prev, expectedFlavorNotes: e.target.value }))}
                     rows={2}
-                    className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-4 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
                   />
                 </div>
               </div>
@@ -275,13 +337,13 @@ export const CoffeeInventory: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2 bg-espresso-800 border border-espresso-700 text-espresso-300 rounded-lg hover:border-amber-500 transition"
+                  className="flex-1 px-4 py-2 bg-elevated text-text-secondary rounded-lg hover:bg-elevated border border-elevated transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition"
+                  className="flex-1 px-4 py-2 bg-accent-amber text-primary rounded-lg hover:shadow-lg transition font-semibold"
                 >
                   Save
                 </button>
@@ -293,3 +355,5 @@ export const CoffeeInventory: React.FC = () => {
     </Layout>
   )
 }
+
+export default CoffeeInventory

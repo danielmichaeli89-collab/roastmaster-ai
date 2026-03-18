@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, BarChart2 } from 'lucide-react'
+import { Eye, BarChart2, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Layout, LoadingSpinner, RoastChart } from '../components'
 import { roastsAPI } from '../api'
@@ -92,16 +92,35 @@ export const RoastHistory: React.FC = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Filters */}
-        <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6">
-          <h3 className="text-amber-500 font-semibold mb-4">Filters</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Header */}
+        <div>
+          <h2 className="text-3xl font-bold text-accent-amber">Roast History</h2>
+          <p className="text-text-secondary mt-1">Track and analyze your roasting sessions</p>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="bg-card rounded-xl border border-elevated p-6 space-y-4">
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-text-primary mb-2">Search</label>
+              <div className="relative">
+                <Search size={18} className="absolute left-3 top-2.5 text-text-muted" />
+                <input
+                  type="text"
+                  placeholder="Search roasts..."
+                  className="w-full pl-10 pr-4 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="block text-espresso-400 text-sm mb-2">Roast Level</label>
+              <label className="block text-sm font-medium text-text-primary mb-2">Roast Level</label>
               <select
                 value={filters.roastLevel}
                 onChange={(e) => setFilters((prev) => ({ ...prev, roastLevel: e.target.value }))}
-                className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                className="w-full px-3 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
               >
                 <option value="">All</option>
                 <option value="light">Light</option>
@@ -113,34 +132,34 @@ export const RoastHistory: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-espresso-400 text-sm mb-2">Min Quality</label>
+              <label className="block text-sm font-medium text-text-primary mb-2">Min Quality</label>
               <input
                 type="number"
                 min="0"
                 max="10"
                 value={filters.minQuality}
                 onChange={(e) => setFilters((prev) => ({ ...prev, minQuality: Number(e.target.value) }))}
-                className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                className="w-full px-3 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
               />
             </div>
 
             <div>
-              <label className="block text-espresso-400 text-sm mb-2">Start Date</label>
+              <label className="block text-sm font-medium text-text-primary mb-2">Start Date</label>
               <input
                 type="date"
                 value={filters.startDate}
                 onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
-                className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                className="w-full px-3 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
               />
             </div>
 
             <div>
-              <label className="block text-espresso-400 text-sm mb-2">End Date</label>
+              <label className="block text-sm font-medium text-text-primary mb-2">End Date</label>
               <input
                 type="date"
                 value={filters.endDate}
                 onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
-                className="w-full px-4 py-2 bg-espresso-800 border border-espresso-700 rounded-lg text-espresso-100 focus:outline-none focus:border-amber-500"
+                className="w-full px-3 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
               />
             </div>
           </div>
@@ -149,18 +168,18 @@ export const RoastHistory: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Roasts list */}
           <div className="lg:col-span-1">
-            <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6 space-y-3 max-h-[600px] overflow-y-auto">
+            <div className="bg-card rounded-xl border border-elevated p-6 space-y-3 max-h-[600px] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-amber-500 font-semibold">Roasts ({roasts.length})</h3>
+                <h3 className="text-lg font-bold text-accent-amber">Roasts ({roasts.length})</h3>
                 {compareMode && (
                   <button
                     onClick={() => {
                       setCompareMode(false)
                       setSelectedForCompare([])
                     }}
-                    className="text-sm text-espresso-400 hover:text-amber-500"
+                    className="text-sm text-text-secondary hover:text-accent-amber transition"
                   >
-                    Exit Compare
+                    Exit
                   </button>
                 )}
               </div>
@@ -170,10 +189,10 @@ export const RoastHistory: React.FC = () => {
                   key={roast.id}
                   className={`p-3 rounded-lg border transition cursor-pointer ${
                     selectedRoast?.id === roast.id
-                      ? 'bg-amber-900/50 border-amber-500'
+                      ? 'bg-accent-amber/20 border-accent-amber'
                       : selectedForCompare.includes(roast.id)
-                        ? 'bg-blue-900/30 border-blue-500'
-                        : 'bg-espresso-800 border-espresso-700 hover:border-amber-500'
+                        ? 'bg-info/20 border-info'
+                        : 'bg-elevated border-elevated hover:border-accent-amber'
                   }`}
                   onClick={() => {
                     if (compareMode) {
@@ -183,10 +202,10 @@ export const RoastHistory: React.FC = () => {
                     }
                   }}
                 >
-                  <p className="font-semibold text-amber-500">{roast.batchNumber}</p>
-                  <p className="text-espresso-400 text-xs">{roast.coffeeOrigin}</p>
+                  <p className="font-semibold text-accent-gold">{roast.batchNumber}</p>
+                  <p className="text-text-secondary text-xs">{roast.coffeeOrigin}</p>
                   {roast.qualityRating && (
-                    <p className="text-amber-400 text-xs mt-1">⭐ {roast.qualityRating}/10</p>
+                    <p className="text-accent-gold text-xs mt-1">Rating: {roast.qualityRating.toFixed(1)}/10</p>
                   )}
                 </div>
               ))}
@@ -195,7 +214,7 @@ export const RoastHistory: React.FC = () => {
             {compareMode && selectedForCompare.length >= 2 && (
               <button
                 onClick={handleCompare}
-                className="w-full mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                className="w-full mt-3 px-4 py-2 bg-info text-primary rounded-lg hover:shadow-lg transition flex items-center justify-center gap-2 font-semibold"
               >
                 <BarChart2 size={16} />
                 Compare {selectedForCompare.length} Roasts
@@ -207,39 +226,39 @@ export const RoastHistory: React.FC = () => {
           <div className="lg:col-span-2">
             {selectedRoast && !compareMode ? (
               <div className="space-y-6">
-                <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6">
-                  <h3 className="text-xl font-bold text-amber-500 mb-4">{selectedRoast.batchNumber}</h3>
+                <div className="bg-card rounded-xl border border-elevated p-6">
+                  <h3 className="text-2xl font-bold text-accent-amber mb-4">{selectedRoast.batchNumber}</h3>
 
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-espresso-400">Origin</p>
-                      <p className="text-espresso-100 font-semibold">{selectedRoast.coffeeOrigin}</p>
+                      <p className="text-text-secondary">Origin</p>
+                      <p className="text-text-primary font-semibold">{selectedRoast.coffeeOrigin}</p>
                     </div>
                     <div>
-                      <p className="text-espresso-400">Level</p>
-                      <p className="text-espresso-100 font-semibold">{selectedRoast.roastLevel || 'N/A'}</p>
+                      <p className="text-text-secondary">Level</p>
+                      <p className="text-text-primary font-semibold">{selectedRoast.roastLevel || 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-espresso-400">Quality</p>
-                      <p className="text-amber-500 font-semibold">
-                        {selectedRoast.qualityRating ? `${selectedRoast.qualityRating}/10` : 'Not rated'}
+                      <p className="text-text-secondary">Quality</p>
+                      <p className="text-accent-gold font-semibold">
+                        {selectedRoast.qualityRating ? `${selectedRoast.qualityRating.toFixed(1)}/10` : 'Not rated'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-espresso-400">Duration</p>
-                      <p className="text-espresso-100 font-semibold">
-                        {selectedRoast.roastDurationSeconds ? `${selectedRoast.roastDurationSeconds}s` : 'N/A'}
+                      <p className="text-text-secondary">Duration</p>
+                      <p className="text-text-primary font-semibold">
+                        {selectedRoast.roastDurationSeconds ? `${Math.round(selectedRoast.roastDurationSeconds / 60)}m ${selectedRoast.roastDurationSeconds % 60}s` : 'N/A'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-espresso-400">Development %</p>
-                      <p className="text-espresso-100 font-semibold">
-                        {selectedRoast.targetDevelopmentTimeSeconds}
+                      <p className="text-text-secondary">Dev Time</p>
+                      <p className="text-text-primary font-semibold">
+                        {selectedRoast.targetDevelopmentTimeSeconds}s
                       </p>
                     </div>
                     <div>
-                      <p className="text-espresso-400">Date</p>
-                      <p className="text-espresso-100 font-semibold">
+                      <p className="text-text-secondary">Date</p>
+                      <p className="text-text-primary font-semibold">
                         {new Date(selectedRoast.createdAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -250,20 +269,20 @@ export const RoastHistory: React.FC = () => {
 
                 <button
                   onClick={() => navigate(`/monitor/${selectedRoast.id}`)}
-                  className="w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition flex items-center justify-center gap-2"
+                  className="w-full px-4 py-3 bg-accent-amber text-primary rounded-lg hover:shadow-lg transition flex items-center justify-center gap-2 font-semibold"
                 >
                   <Eye size={16} />
                   View Full Details
                 </button>
               </div>
             ) : compareMode && selectedForCompare.length >= 2 ? (
-              <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-amber-500 mb-4">Comparison</h3>
+              <div className="bg-card rounded-xl border border-elevated p-6">
+                <h3 className="text-lg font-bold text-accent-amber mb-4">Roast Comparison</h3>
                 {tempLogs.length > 0 && <RoastChart data={tempLogs} height={400} />}
               </div>
             ) : (
-              <div className="bg-espresso-900 border border-espresso-800 rounded-lg p-6 flex items-center justify-center min-h-[400px]">
-                <p className="text-espresso-400 text-center">
+              <div className="bg-card rounded-xl border border-elevated p-6 flex items-center justify-center min-h-[400px]">
+                <p className="text-text-secondary text-center">
                   {compareMode
                     ? 'Select roasts to compare'
                     : 'Select a roast to view details'}
