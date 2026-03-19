@@ -64,7 +64,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, isRoasting = false }) 
     {
       title: 'SYSTEM',
       items: [
-        { path: '/import', icon: <Upload size={20} />, label: 'Import CSV' },
+        { path: '/import-csv', icon: <Upload size={20} />, label: 'Import CSV' },
         { path: '/settings', icon: <Settings size={20} />, label: 'Settings' },
       ],
     },
