@@ -26,12 +26,12 @@ export const authAPI = {
     return response.data
   },
 
-  updateProfile: async (userId: string, data: Partial<User>): Promise<User> => {
-    const response = await client.patch(`/auth/profile/${userId}`, data)
+  updateProfile: async (_userId: string, data: Partial<User>): Promise<User> => {
+    const response = await client.put('/auth/profile', data)
     return response.data
   },
 
-  changePassword: async (oldPassword: string, newPassword: string): Promise<void> => {
-    await client.post('/auth/change-password', { oldPassword, newPassword })
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    await client.post('/auth/change-password', { currentPassword, newPassword })
   },
 }

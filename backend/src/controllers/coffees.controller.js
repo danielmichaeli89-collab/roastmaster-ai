@@ -3,12 +3,31 @@ import db from '../config/database.js';
 
 export const listCoffees = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = (page - 1) * limit;
+
     const coffees = await db('green_coffees')
       .select('*')
       .where('user_id', req.user.id)
-      .orderBy('created_at', 'desc');
+      .orderBy('created_at', 'desc')
+      .limit(limit)
+      .offset(offset);
 
-    return res.json(coffees);
+    const countResult = await db('green_coffees')
+      .where('user_id', req.user.id)
+      .count('* as total')
+      .first();
+
+    const total = parseInt(countResult?.total) || 0;
+
+    return res.json({
+      data: coffees,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (error) {
     console.error('List coffees error:', error);
     return res.status(500).json({ error: 'Failed to fetch coffees' });

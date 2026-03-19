@@ -3,31 +3,47 @@ import { useAuthStore } from '../store/authStore'
 import { authAPI } from '../api/auth'
 import { User, LoginRequest, RegisterRequest } from '../types'
 
+// Global initialization flag - prevents re-init across component remounts
+let authInitialized = false
+let authInitializing = false
+
 export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isReady, setIsReady] = useState(authInitialized)
 
   const store = useAuthStore()
 
-  // Initialize auth from localStorage
+  // Initialize auth from localStorage - runs once globally
   useEffect(() => {
+    if (authInitialized || authInitializing) {
+      setIsReady(true)
+      return
+    }
+
+    authInitializing = true
+
     const initAuth = async () => {
       const token = localStorage.getItem('accessToken')
-      if (token && !store.user) {
+      if (token) {
         try {
           const user = await authAPI.getCurrentUser()
           store.setUser(user)
           store.setToken(token)
         } catch (err) {
+          // Token is invalid or expired - clean up
           localStorage.removeItem('accessToken')
           localStorage.removeItem('refreshToken')
           store.logout()
         }
       }
+      authInitialized = true
+      authInitializing = false
+      setIsReady(true)
     }
 
     initAuth()
-  }, [store])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = useCallback(
     async (credentials: LoginRequest) => {
@@ -42,7 +58,7 @@ export const useAuth = () => {
         localStorage.setItem('refreshToken', response.token.refreshToken)
         return response.user
       } catch (err: any) {
-        const errorMsg = err.response?.data?.message || 'Login failed'
+        const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Login failed'
         setError(errorMsg)
         throw err
       } finally {
@@ -65,7 +81,7 @@ export const useAuth = () => {
         localStorage.setItem('refreshToken', response.token.refreshToken)
         return response.user
       } catch (err: any) {
-        const errorMsg = err.response?.data?.message || 'Registration failed'
+        const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Registration failed'
         setError(errorMsg)
         throw err
       } finally {
@@ -79,7 +95,7 @@ export const useAuth = () => {
     try {
       await authAPI.logout()
     } catch (err) {
-      console.error('Logout error:', err)
+      // Ignore logout errors
     } finally {
       store.logout()
       localStorage.removeItem('accessToken')
@@ -98,7 +114,7 @@ export const useAuth = () => {
         store.setUser(updated)
         return updated
       } catch (err: any) {
-        const errorMsg = err.response?.data?.message || 'Failed to update profile'
+        const errorMsg = err.response?.data?.error || 'Failed to update profile'
         setError(errorMsg)
         throw err
       } finally {
@@ -116,7 +132,7 @@ export const useAuth = () => {
       try {
         await authAPI.changePassword(oldPassword, newPassword)
       } catch (err: any) {
-        const errorMsg = err.response?.data?.message || 'Failed to change password'
+        const errorMsg = err.response?.data?.error || 'Failed to change password'
         setError(errorMsg)
         throw err
       } finally {
@@ -129,7 +145,7 @@ export const useAuth = () => {
   return {
     user: store.user,
     isAuthenticated: store.isAuthenticated,
-    isLoading,
+    isLoading: isLoading || !isReady,
     error,
     login,
     register,

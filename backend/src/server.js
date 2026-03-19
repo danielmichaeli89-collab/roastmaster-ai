@@ -61,6 +61,7 @@ app.get('/api/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/coffees', coffeesRoutes);
+app.use('/api/inventory', coffeesRoutes); // Alias: frontend uses /inventory, backend uses /coffees
 app.use('/api/profiles', profilesRoutes);
 app.use('/api/roasts', roastsRoutes);
 app.use('/api/analytics', analyticsRoutes);

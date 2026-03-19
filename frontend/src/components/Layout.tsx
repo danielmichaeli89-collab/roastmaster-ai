@@ -197,11 +197,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, isRoasting = false }) 
             {user && (
               <div className="flex items-center gap-3 pl-6 border-l border-elevated">
                 <div className="text-right">
-                  <p className="text-text-primary text-sm font-medium">{user.organizationName}</p>
-                  <p className="text-text-muted text-xs">{user.role}</p>
+                  <p className="text-text-primary text-sm font-medium">{user.organizationName || user.email}</p>
+                  <p className="text-text-muted text-xs">{user.role || 'roaster'}</p>
                 </div>
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-amber to-accent-gold flex items-center justify-center text-primary font-bold">
-                  {user.fullName.charAt(0)}
+                  {(user.fullName || user.username || user.email || 'U').charAt(0).toUpperCase()}
                 </div>
               </div>
             )}
