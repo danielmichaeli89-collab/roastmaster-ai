@@ -42,9 +42,17 @@ export const Dashboard: React.FC = () => {
           analyticsAPI.getQualityTrends('month'),
         ])
 
-        setStats(statsData)
-        setRecentRoasts(roastsData.data)
-        setTrendData(trendsData)
+        // Map backend response to frontend expected format
+        setStats({
+          totalRoasts: parseInt(statsData?.totalRoasts) || 0,
+          averageQualityRating: parseFloat(statsData?.averageQualityRating || statsData?.avgDevelopmentPct) || 0,
+          successRate: parseFloat(statsData?.successRate) || 0,
+          averageDevelopmentTime: parseFloat(statsData?.averageDevelopmentTime || statsData?.avgDevelopmentPct) || 0,
+          averageFirstCrackTime: parseFloat(statsData?.averageFirstCrackTime) || 0,
+          lastRoastDate: statsData?.lastRoastDate || new Date().toISOString(),
+        })
+        setRecentRoasts(Array.isArray(roastsData?.data) ? roastsData.data : Array.isArray(roastsData) ? roastsData : [])
+        setTrendData(Array.isArray(trendsData?.timeline) ? trendsData.timeline : Array.isArray(trendsData) ? trendsData : [])
       } catch (err) {
         // Show demo data on error
         console.error('Failed to load dashboard data:', err)
@@ -122,20 +130,20 @@ export const Dashboard: React.FC = () => {
               <StatCard
                 icon={<Star size={24} />}
                 title="Average Quality"
-                value={stats.averageQualityRating.toFixed(1)}
+                value={Number(stats.averageQualityRating || 0).toFixed(1)}
                 unit="/ 10"
                 trend={{ value: 5, isPositive: true }}
               />
               <StatCard
                 icon={<CheckCircle size={24} />}
                 title="Success Rate"
-                value={`${(stats.successRate * 100).toFixed(0)}%`}
+                value={`${(Number(stats.successRate || 0) * 100).toFixed(0)}%`}
                 trend={{ value: 3, isPositive: true }}
               />
               <StatCard
                 icon={<Clock size={24} />}
                 title="Avg Dev Time"
-                value={stats.averageDevelopmentTime.toFixed(0)}
+                value={Number(stats.averageDevelopmentTime || 0).toFixed(0)}
                 unit="s"
                 trend={{ value: 2, isPositive: false }}
               />
@@ -215,7 +223,7 @@ export const Dashboard: React.FC = () => {
                   <p className="text-text-muted text-sm mb-1">Quality Rating</p>
                   <div className="flex items-center gap-2">
                     <p className="text-accent-amber font-bold text-2xl">
-                      {recentRoasts[0].qualityRating ? recentRoasts[0].qualityRating.toFixed(1) : '-'}
+                      {recentRoasts[0].qualityRating ? Number(recentRoasts[0].qualityRating || 0).toFixed(1) : '-'}
                     </p>
                     <p className="text-text-muted">/10</p>
                   </div>
@@ -272,7 +280,7 @@ export const Dashboard: React.FC = () => {
                     </td>
                     <td className="py-4 px-4">
                       <p className="font-semibold text-accent-gold">
-                        {roast.qualityRating ? `${roast.qualityRating.toFixed(1)}/10` : 'Unrated'}
+                        {roast.qualityRating ? `${Number(roast.qualityRating || 0).toFixed(1)}/10` : 'Unrated'}
                       </p>
                     </td>
                     <td className="py-4 px-4 text-text-muted text-sm">

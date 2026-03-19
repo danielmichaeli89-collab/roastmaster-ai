@@ -34,12 +34,12 @@ export const CoffeeCard: React.FC<CoffeeCardProps> = ({ coffee, onClick }) => {
 
         <div className="flex items-center gap-2 text-espresso-300">
           <Package size={14} className="text-amber-500 flex-shrink-0" />
-          <span>{coffee.quantityKg.toFixed(1)} kg ({coffee.quantityBags} bags)</span>
+          <span>{Number(coffee.quantityKg || 0).toFixed(1)} kg</span>
         </div>
 
         <div className="flex items-center gap-2 text-espresso-300">
           <Calendar size={14} className="text-amber-500 flex-shrink-0" />
-          <span>Received {format(new Date(coffee.receivedDate), 'MMM dd')}</span>
+          <span>{coffee.receivedDate ? `Received ${format(new Date(coffee.receivedDate), 'MMM dd')}` : 'In stock'}</span>
         </div>
 
         {coffee.expectedFlavorNotes && (
@@ -57,7 +57,7 @@ export const CoffeeCard: React.FC<CoffeeCardProps> = ({ coffee, onClick }) => {
         </div>
         <div className="text-xs">
           <p className="text-espresso-500">Moisture</p>
-          <p className="text-amber-500 font-semibold">{coffee.moisturePercent.toFixed(1)}%</p>
+          <p className="text-amber-500 font-semibold">{Number(coffee.moisturePercent || 0).toFixed(1)}%</p>
         </div>
         <div className="text-xs">
           <p className="text-espresso-500">Altitude</p>

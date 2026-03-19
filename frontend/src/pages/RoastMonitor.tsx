@@ -778,7 +778,7 @@ export const RoastMonitor: React.FC = () => {
                         {card.label}
                       </p>
                       <p className="text-2xl font-mono font-bold text-text-primary">
-                        {card.value.toFixed(1)}
+                        {Number(card.value || 0).toFixed(1)}
                       </p>
                       <p className="text-xs text-text-muted">{card.unit}</p>
                       <div className={`flex items-center gap-1 mt-2 ${delta.color} text-xs font-semibold`}>

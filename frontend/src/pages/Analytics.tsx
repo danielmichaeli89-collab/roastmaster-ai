@@ -149,7 +149,7 @@ export const Analytics: React.FC = () => {
                       <p className="font-semibold text-text-primary">{item.origin}</p>
                       <p className="text-text-secondary text-xs">{item.roastCount} roasts</p>
                     </div>
-                    <p className="text-accent-gold font-semibold">{item.averageQuality.toFixed(1)}</p>
+                    <p className="text-accent-gold font-semibold">{Number(item.averageQuality || 0).toFixed(1)}</p>
                   </div>
                 ))}
               </div>
@@ -184,9 +184,9 @@ export const Analytics: React.FC = () => {
                   <div key={idx} className="flex items-center justify-between p-3 bg-elevated rounded-lg">
                     <div>
                       <p className="font-semibold text-text-primary">{item.profileName}</p>
-                      <p className="text-text-secondary text-xs">{item.roastCount} uses, {(item.successRate * 100).toFixed(0)}% success</p>
+                      <p className="text-text-secondary text-xs">{item.roastCount} uses, {(Number(item.successRate || 0) * 100).toFixed(0)}% success</p>
                     </div>
-                    <p className="text-accent-gold font-semibold">{item.averageQuality.toFixed(1)}</p>
+                    <p className="text-accent-gold font-semibold">{Number(item.averageQuality || 0).toFixed(1)}</p>
                   </div>
                 ))}
               </div>

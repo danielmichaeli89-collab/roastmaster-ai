@@ -205,7 +205,7 @@ export const RoastHistory: React.FC = () => {
                   <p className="font-semibold text-accent-gold">{roast.batchNumber}</p>
                   <p className="text-text-secondary text-xs">{roast.coffeeOrigin}</p>
                   {roast.qualityRating && (
-                    <p className="text-accent-gold text-xs mt-1">Rating: {roast.qualityRating.toFixed(1)}/10</p>
+                    <p className="text-accent-gold text-xs mt-1">Rating: {Number(roast.qualityRating || 0).toFixed(1)}/10</p>
                   )}
                 </div>
               ))}
@@ -241,7 +241,7 @@ export const RoastHistory: React.FC = () => {
                     <div>
                       <p className="text-text-secondary">Quality</p>
                       <p className="text-accent-gold font-semibold">
-                        {selectedRoast.qualityRating ? `${selectedRoast.qualityRating.toFixed(1)}/10` : 'Not rated'}
+                        {selectedRoast.qualityRating ? `${Number(selectedRoast.qualityRating || 0).toFixed(1)}/10` : 'Not rated'}
                       </p>
                     </div>
                     <div>

@@ -68,10 +68,10 @@ export const AnomalyAlert: React.FC<AnomalyAlertProps> = ({
                 <span className="font-semibold text-text-primary">{anomaly.affectedSensor}:</span>
               </p>
               <p className="text-text-primary font-mono text-sm mt-1">
-                Expected: {anomaly.expectedValue.toFixed(1)} | Got: {anomaly.actualValue.toFixed(1)}
+                Expected: {Number(anomaly.expectedValue || 0).toFixed(1)} | Got: {Number(anomaly.actualValue || 0).toFixed(1)}
               </p>
               <p className="text-danger text-sm font-semibold mt-2">
-                {anomaly.deviationPercent.toFixed(1)}% deviation
+                {Number(anomaly.deviationPercent || 0).toFixed(1)}% deviation
               </p>
             </div>
 

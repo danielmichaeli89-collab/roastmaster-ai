@@ -34,9 +34,23 @@ export const CoffeeInventory: React.FC = () => {
     try {
       setIsLoading(true)
       const response = await inventoryAPI.list(1, 100)
-      setCoffees(response.data)
+      // Map backend snake_case to frontend camelCase
+      const mapped = (response.data || response || []).map((c: any) => ({
+        ...c,
+        id: c.id,
+        coffeeName: c.name || c.coffeeName || '',
+        originCountry: c.origin_country || c.originCountry || '',
+        originRegion: c.region || c.originRegion || '',
+        processingMethod: c.processing_method || c.processingMethod || '',
+        quantityKg: c.quantity_kg || c.quantityKg || 0,
+        density: c.density || 0,
+        moisturePercent: c.moisture_content || c.moisturePercent || 0,
+        flavorNotes: c.flavor_notes || c.flavorNotes || '',
+      }))
+      setCoffees(mapped)
     } catch (err) {
-      toast.error('Failed to load inventory')
+      console.error('Load coffees error:', err)
+      setCoffees([])
     } finally {
       setIsLoading(false)
     }
@@ -82,18 +96,33 @@ export const CoffeeInventory: React.FC = () => {
       return
     }
 
+    // Map frontend camelCase fields to backend snake_case
+    const apiData = {
+      name: formData.coffeeName,
+      origin_country: formData.originCountry,
+      region: formData.originRegion,
+      processing_method: formData.processingMethod,
+      quantity_kg: formData.quantityKg ? parseFloat(formData.quantityKg as any) : null,
+      density: formData.densityScore ? parseFloat(formData.densityScore as any) : null,
+      moisture_content: formData.moisturePercent ? parseFloat(formData.moisturePercent as any) : null,
+      flavor_notes: formData.expectedFlavorNotes || null,
+      variety: (formData as any).variety || null,
+      altitude: (formData as any).altitude ? parseInt((formData as any).altitude) : null,
+    }
+
     try {
       if (selectedCoffee) {
-        await inventoryAPI.update(selectedCoffee.id, formData as any)
+        await inventoryAPI.update(selectedCoffee.id, apiData as any)
         toast.success('Coffee updated')
       } else {
-        await inventoryAPI.create(formData as any)
-        toast.success('Coffee added')
+        await inventoryAPI.create(apiData as any)
+        toast.success('Coffee added successfully!')
       }
       loadCoffees()
       setShowModal(false)
-    } catch (err) {
-      toast.error('Failed to save coffee')
+    } catch (err: any) {
+      console.error('Save coffee error:', err)
+      toast.error(err?.response?.data?.error || 'Failed to save coffee')
     }
   }
 
@@ -111,8 +140,8 @@ export const CoffeeInventory: React.FC = () => {
 
   const filteredCoffees = coffees.filter(
     (c) =>
-      c.coffeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.originCountry.toLowerCase().includes(searchQuery.toLowerCase())
+      (c.coffeeName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.originCountry || '').toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   if (isLoading) {
@@ -213,8 +242,8 @@ export const CoffeeInventory: React.FC = () => {
                     <td className="py-3 px-4 text-text-primary font-medium">{coffee.coffeeName}</td>
                     <td className="py-3 px-4 text-accent-gold">{coffee.originCountry} {coffee.originRegion && `- ${coffee.originRegion}`}</td>
                     <td className="py-3 px-4 text-text-secondary">{coffee.processingMethod}</td>
-                    <td className="py-3 px-4 text-text-primary">{coffee.quantityKg.toFixed(1)}</td>
-                    <td className="py-3 px-4 text-text-primary">{coffee.moisturePercent.toFixed(1)}</td>
+                    <td className="py-3 px-4 text-text-primary">{Number(coffee.quantityKg || 0).toFixed(1)}</td>
+                    <td className="py-3 px-4 text-text-primary">{Number(coffee.moisturePercent || 0).toFixed(1)}</td>
                     <td className="py-3 px-4 flex gap-2">
                       <button
                         onClick={() => handleEdit(coffee)}

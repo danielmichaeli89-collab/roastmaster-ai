@@ -33,7 +33,7 @@ export const TemperatureGauge: React.FC<TemperatureGaugeProps> = ({
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-espresso-300 text-sm font-medium">{label}</h3>
         <span className="text-amber-500 text-lg font-bold">
-          {current.toFixed(1)}{unit}
+          {Number(current || 0).toFixed(1)}{unit}
         </span>
       </div>
 
