@@ -57,28 +57,32 @@ export const createProfile = async (req, res) => {
     notes
   } = req.body;
 
-  if (!name || !phases) {
-    return res.status(400).json({
-      error: 'Profile name and phases required'
-    });
+  if (!name || name.trim() === '') {
+    return res.status(400).json({ error: 'Profile name required' });
+  }
+
+  if (!phases || !Array.isArray(phases) || phases.length === 0) {
+    return res.status(400).json({ error: 'Roast phases required' });
   }
 
   try {
     const profileId = uuidv4();
 
-    await db('roast_profiles').insert({
+    const profileData = {
       id: profileId,
       user_id: req.user.id,
-      name,
-      coffee_type,
-      target_flavor,
-      charge_temp,
+      name: name.trim(),
+      coffee_type: coffee_type || null,
+      target_flavor: target_flavor || null,
+      charge_temp: charge_temp ? parseFloat(charge_temp) : null,
       phases: JSON.stringify(phases),
-      total_duration_target,
-      development_time_pct,
+      total_duration_target: total_duration_target ? parseInt(total_duration_target) : null,
+      development_time_pct: development_time_pct ? parseFloat(development_time_pct) : null,
       ai_generated: false,
-      notes
-    });
+      notes: notes || null
+    };
+
+    await db('roast_profiles').insert(profileData);
 
     const profile = await db('roast_profiles').where('id', profileId).first();
 

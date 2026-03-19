@@ -61,31 +61,33 @@ export const createCoffee = async (req, res) => {
     notes
   } = req.body;
 
-  if (!name) {
+  if (!name || name.trim() === '') {
     return res.status(400).json({ error: 'Coffee name required' });
   }
 
   try {
     const coffeeId = uuidv4();
 
-    await db('green_coffees').insert({
+    const coffeeData = {
       id: coffeeId,
       user_id: req.user.id,
-      name,
-      origin_country,
-      region,
-      farm,
-      variety,
-      processing_method,
-      altitude,
-      moisture_content,
-      density,
-      screen_size,
-      harvest_year,
-      flavor_notes,
-      quantity_kg,
-      notes
-    });
+      name: name.trim(),
+      origin_country: origin_country || null,
+      region: region || null,
+      farm: farm || null,
+      variety: variety || null,
+      processing_method: processing_method || null,
+      altitude: altitude ? parseInt(altitude) : null,
+      moisture_content: moisture_content ? parseFloat(moisture_content) : null,
+      density: density ? parseFloat(density) : null,
+      screen_size: screen_size ? parseInt(screen_size) : null,
+      harvest_year: harvest_year ? parseInt(harvest_year) : null,
+      flavor_notes: flavor_notes || null,
+      quantity_kg: quantity_kg ? parseFloat(quantity_kg) : null,
+      notes: notes || null
+    };
+
+    await db('green_coffees').insert(coffeeData);
 
     const coffee = await db('green_coffees').where('id', coffeeId).first();
 

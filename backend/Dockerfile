@@ -9,6 +9,8 @@ RUN npm ci --omit=dev
 
 COPY backend/src ./src
 
-EXPOSE 3000
+# Expose the port the server runs on (default 5000, configurable via PORT env var)
+EXPOSE 5000
 
+# Run migrations and start server
 CMD ["sh", "-c", "npx knex migrate:latest && node src/server.js"]

@@ -103,3 +103,45 @@ export const getCurrentUser = async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch user' });
   }
 };
+
+export const updateUserProfile = async (req, res) => {
+  try {
+    const { name, email } = req.body;
+
+    const user = await db('users').where('id', req.user.id).first();
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if new email is already taken (if changed)
+    if (email && email !== user.email) {
+      const existing = await db('users').where('email', email).first();
+      if (existing) {
+        return res.status(409).json({ error: 'Email already in use' });
+      }
+    }
+
+    const updates = {};
+    if (name) updates.name = name;
+    if (email) updates.email = email;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    await db('users').where('id', req.user.id).update(updates);
+
+    const updated = await db('users').where('id', req.user.id).first();
+
+    return res.json({
+      id: updated.id,
+      email: updated.email,
+      name: updated.name,
+      role: updated.role
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    return res.status(500).json({ error: 'Failed to update profile' });
+  }
+};

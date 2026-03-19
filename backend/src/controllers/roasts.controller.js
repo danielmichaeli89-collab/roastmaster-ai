@@ -73,25 +73,28 @@ export const createRoast = async (req, res) => {
     ambient_humidity_percent
   } = req.body;
 
-  if (!batch_weight_g) {
-    return res.status(400).json({ error: 'Batch weight required' });
+  if (!batch_weight_g || batch_weight_g <= 0) {
+    return res.status(400).json({ error: 'Valid batch weight required' });
   }
 
   try {
     const roastId = uuidv4();
+    const now = new Date();
 
-    await db('roasts').insert({
+    const roastData = {
       id: roastId,
       user_id: req.user.id,
-      profile_id,
-      green_coffee_id,
+      profile_id: profile_id || null,
+      green_coffee_id: green_coffee_id || null,
       status: 'planned',
-      batch_weight_g,
-      charge_temp: charge_temp || 195,
-      start_time: new Date(),
-      ambient_temperature,
-      ambient_humidity_percent
-    });
+      batch_weight_g: parseFloat(batch_weight_g),
+      charge_temp: charge_temp ? parseFloat(charge_temp) : 195,
+      start_time: now,
+      ambient_temperature: ambient_temperature ? parseFloat(ambient_temperature) : null,
+      ambient_humidity_percent: ambient_humidity_percent ? parseFloat(ambient_humidity_percent) : null
+    };
+
+    await db('roasts').insert(roastData);
 
     const roast = await db('roasts').where('id', roastId).first();
 
@@ -180,7 +183,7 @@ export const recordDataPoint = async (req, res) => {
   const { id } = req.params;
   const dataPoint = req.body;
 
-  if (!dataPoint.elapsed_seconds) {
+  if (dataPoint.elapsed_seconds === undefined || dataPoint.elapsed_seconds === null) {
     return res.status(400).json({ error: 'Elapsed seconds required' });
   }
 
@@ -196,25 +199,27 @@ export const recordDataPoint = async (req, res) => {
 
     const logId = uuidv4();
 
-    await db('temperature_logs').insert({
+    const logData = {
       id: logId,
       roast_id: id,
       timestamp: new Date(),
-      elapsed_seconds: dataPoint.elapsed_seconds,
-      bean_temp_1: dataPoint.bean_temp_1,
-      bean_temp_2: dataPoint.bean_temp_2,
-      air_temp: dataPoint.air_temp,
-      inlet_temp: dataPoint.inlet_temp,
-      drum_temp: dataPoint.drum_temp,
-      exhaust_temp: dataPoint.exhaust_temp,
-      drum_pressure: dataPoint.drum_pressure,
-      ror_bt: dataPoint.ror_bt,
-      ror_et: dataPoint.ror_et,
-      power_pct: dataPoint.power_pct,
-      airflow_pct: dataPoint.airflow_pct,
-      rpm: dataPoint.rpm,
-      phase: dataPoint.phase
-    });
+      elapsed_seconds: parseInt(dataPoint.elapsed_seconds),
+      bean_temp_1: dataPoint.bean_temp_1 !== undefined ? parseFloat(dataPoint.bean_temp_1) : null,
+      bean_temp_2: dataPoint.bean_temp_2 !== undefined ? parseFloat(dataPoint.bean_temp_2) : null,
+      air_temp: dataPoint.air_temp !== undefined ? parseFloat(dataPoint.air_temp) : null,
+      inlet_temp: dataPoint.inlet_temp !== undefined ? parseFloat(dataPoint.inlet_temp) : null,
+      drum_temp: dataPoint.drum_temp !== undefined ? parseFloat(dataPoint.drum_temp) : null,
+      exhaust_temp: dataPoint.exhaust_temp !== undefined ? parseFloat(dataPoint.exhaust_temp) : null,
+      drum_pressure: dataPoint.drum_pressure !== undefined ? parseFloat(dataPoint.drum_pressure) : null,
+      ror_bt: dataPoint.ror_bt !== undefined ? parseFloat(dataPoint.ror_bt) : null,
+      ror_et: dataPoint.ror_et !== undefined ? parseFloat(dataPoint.ror_et) : null,
+      power_pct: dataPoint.power_pct !== undefined ? parseFloat(dataPoint.power_pct) : null,
+      airflow_pct: dataPoint.airflow_pct !== undefined ? parseFloat(dataPoint.airflow_pct) : null,
+      rpm: dataPoint.rpm !== undefined ? parseInt(dataPoint.rpm) : null,
+      phase: dataPoint.phase || null
+    };
+
+    await db('temperature_logs').insert(logData);
 
     const log = await db('temperature_logs').where('id', logId).first();
 
@@ -229,7 +234,7 @@ export const recordEvent = async (req, res) => {
   const { id } = req.params;
   const { event_type, elapsed_seconds, temperature, description, auto_detected } = req.body;
 
-  if (!event_type) {
+  if (!event_type || event_type.trim() === '') {
     return res.status(400).json({ error: 'Event type required' });
   }
 
@@ -245,15 +250,17 @@ export const recordEvent = async (req, res) => {
 
     const eventId = uuidv4();
 
-    await db('roast_events').insert({
+    const eventData = {
       id: eventId,
       roast_id: id,
-      event_type,
-      elapsed_seconds,
-      temperature,
-      description,
-      auto_detected: auto_detected || false
-    });
+      event_type: event_type.trim(),
+      elapsed_seconds: elapsed_seconds !== undefined ? parseInt(elapsed_seconds) : null,
+      temperature: temperature !== undefined ? parseFloat(temperature) : null,
+      description: description || null,
+      auto_detected: !!auto_detected
+    };
+
+    await db('roast_events').insert(eventData);
 
     if (event_type === 'first_crack' && !roast.first_crack_time) {
       await db('roasts')
