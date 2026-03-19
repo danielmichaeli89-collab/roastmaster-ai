@@ -21,7 +21,7 @@ export const inventoryAPI = {
   },
 
   update: async (coffeeId: string, data: Partial<GreenCoffee>): Promise<GreenCoffee> => {
-    const response = await client.patch(`/inventory/${coffeeId}`, data)
+    const response = await client.put(`/inventory/${coffeeId}`, data)
     return response.data
   },
 

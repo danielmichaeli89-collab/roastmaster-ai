@@ -44,15 +44,16 @@ export const Dashboard: React.FC = () => {
 
         // Map backend response to frontend expected format
         setStats({
-          totalRoasts: parseInt(statsData?.totalRoasts) || 0,
-          averageQualityRating: parseFloat(statsData?.averageQualityRating || statsData?.avgDevelopmentPct) || 0,
-          successRate: parseFloat(statsData?.successRate) || 0,
-          averageDevelopmentTime: parseFloat(statsData?.averageDevelopmentTime || statsData?.avgDevelopmentPct) || 0,
-          averageFirstCrackTime: parseFloat(statsData?.averageFirstCrackTime) || 0,
+          totalRoasts: Number(statsData?.totalRoasts) || 0,
+          averageQualityRating: Number(statsData?.averageQualityRating) || 0,
+          successRate: Number(statsData?.successRate) || 0,
+          averageDevelopmentTime: Number(statsData?.averageDevelopmentTime) || 0,
+          averageFirstCrackTime: Number(statsData?.averageFirstCrackTime) || 0,
           lastRoastDate: statsData?.lastRoastDate || new Date().toISOString(),
         })
         setRecentRoasts(Array.isArray(roastsData?.data) ? roastsData.data : Array.isArray(roastsData) ? roastsData : [])
-        setTrendData(Array.isArray(trendsData?.timeline) ? trendsData.timeline : Array.isArray(trendsData) ? trendsData : [])
+        const trendArray = (trendsData && typeof trendsData === 'object' && 'timeline' in trendsData && Array.isArray(trendsData.timeline)) ? trendsData.timeline : Array.isArray(trendsData) ? trendsData : []
+        setTrendData(trendArray)
       } catch (err) {
         // Show demo data on error
         console.error('Failed to load dashboard data:', err)
@@ -65,12 +66,11 @@ export const Dashboard: React.FC = () => {
           lastRoastDate: new Date().toISOString(),
         })
         setRecentRoasts([])
-        setTrendData(
-          Array.from({ length: 12 }, (_, i) => ({
-            date: `Day ${i + 1}`,
-            score: 7 + Math.random() * 2,
-          }))
-        )
+        const demoTrends = Array.from({ length: 12 }, (_, i) => ({
+          date: `Day ${i + 1}`,
+          score: 7 + Math.random() * 2,
+        }))
+        setTrendData(demoTrends)
         toast.success('Showing demo data')
       } finally {
         setIsLoading(false)
@@ -101,7 +101,7 @@ export const Dashboard: React.FC = () => {
             Start New Roast
           </button>
           <button
-            onClick={() => navigate('/history')}
+            onClick={() => navigate('/import-csv')}
             className="px-6 py-3 glass-card border border-accent-amber border-opacity-20 text-text-primary rounded-lg font-semibold hover:border-opacity-40 transition-all duration-200 flex items-center gap-2"
           >
             <Upload size={20} />

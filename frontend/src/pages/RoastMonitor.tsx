@@ -774,7 +774,10 @@ export const RoastMonitor: React.FC = () => {
                   <div className="mt-6 p-4 bg-accent-amber/10 border border-accent-amber/30 rounded-lg space-y-3">
                     <p className="text-accent-amber font-semibold">Roast Complete</p>
                     <div className="flex gap-3">
-                      <button className="flex-1 px-4 py-2 bg-accent-amber text-primary rounded-lg hover:shadow-lg transition font-semibold text-sm">
+                      <button
+                        onClick={() => navigate('/analytics')}
+                        className="flex-1 px-4 py-2 bg-accent-amber text-primary rounded-lg hover:shadow-lg transition font-semibold text-sm"
+                      >
                         View Analysis
                       </button>
                       <button

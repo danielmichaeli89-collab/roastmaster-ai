@@ -21,7 +21,7 @@ export const profilesAPI = {
   },
 
   update: async (profileId: string, data: Partial<RoastProfile>): Promise<RoastProfile> => {
-    const response = await client.patch(`/profiles/${profileId}`, data)
+    const response = await client.put(`/profiles/${profileId}`, data)
     return response.data
   },
 
@@ -47,7 +47,7 @@ export const profilesAPI = {
   },
 
   updatePhase: async (profileId: string, phaseId: string, data: Partial<ProfilePhase>): Promise<ProfilePhase> => {
-    const response = await client.patch(`/profiles/${profileId}/phases/${phaseId}`, data)
+    const response = await client.put(`/profiles/${profileId}/phases/${phaseId}`, data)
     return response.data
   },
 

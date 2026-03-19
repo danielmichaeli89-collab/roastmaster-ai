@@ -21,7 +21,7 @@ export const roastsAPI = {
   },
 
   update: async (roastId: string, data: Partial<Roast>): Promise<Roast> => {
-    const response = await client.patch(`/roasts/${roastId}`, data)
+    const response = await client.put(`/roasts/${roastId}`, data)
     return response.data
   },
 
@@ -63,7 +63,7 @@ export const roastsAPI = {
   },
 
   updateAnomaly: async (roastId: string, anomalyId: string, data: Partial<RoastAnomaly>): Promise<RoastAnomaly> => {
-    const response = await client.patch(`/roasts/${roastId}/anomalies/${anomalyId}`, data)
+    const response = await client.put(`/roasts/${roastId}/anomalies/${anomalyId}`, data)
     return response.data
   },
 

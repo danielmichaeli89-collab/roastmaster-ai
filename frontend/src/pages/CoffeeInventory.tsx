@@ -124,8 +124,8 @@ export const CoffeeInventory: React.FC = () => {
         await inventoryAPI.create(apiData as any)
         toast.success('Coffee added successfully!')
       }
-      await loadCoffees()
       setShowModal(false)
+      await loadCoffees()
     } catch (err: any) {
       console.error('Save coffee error:', err)
       toast.error(err?.response?.data?.error || 'Failed to save coffee')
