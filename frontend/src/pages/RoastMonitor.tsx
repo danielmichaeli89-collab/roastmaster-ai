@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Play,
   Square,
@@ -14,6 +15,7 @@ import {
   TrendingDown,
   Minus,
   Gauge,
+  ArrowLeft,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import {
@@ -73,6 +75,7 @@ const ROAST_PHASES: RoastPhase[] = [
 ]
 
 export const RoastMonitor: React.FC = () => {
+  const navigate = useNavigate()
   // State: Controls
   const [power, setPower] = useState(65)
   const [airflow, setAirflow] = useState(45)
@@ -256,6 +259,11 @@ export const RoastMonitor: React.FC = () => {
     toast.success('Roast stopped')
   }
 
+  // Handle back to dashboard
+  const handleBackToDashboard = () => {
+    navigate('/dashboard')
+  }
+
   // Handle emergency stop
   const handleEmergencyStop = () => {
     if (window.confirm('Emergency stop will immediately halt the roast. Continue?')) {
@@ -317,6 +325,18 @@ export const RoastMonitor: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-primary flex flex-col">
+      {/* Breadcrumb */}
+      <div className="bg-secondary border-b border-text-muted border-opacity-20 px-6 py-2">
+        <div className="flex items-center gap-2 text-sm text-text-muted">
+          <button onClick={handleBackToDashboard} className="flex items-center gap-1 hover:text-accent-amber transition">
+            <ArrowLeft size={16} />
+            Dashboard
+          </button>
+          <span>/</span>
+          <span className="text-text-primary">Roast Monitor</span>
+        </div>
+      </div>
+
       {/* Top Status Bar */}
       <div className="bg-gradient-to-r from-secondary to-elevated border-b border-accent-amber border-opacity-20 px-6 py-4 flex items-center justify-between">
         <div>
@@ -749,6 +769,23 @@ export const RoastMonitor: React.FC = () => {
                     <p className="text-warning font-mono font-bold text-lg mt-1">12-15%</p>
                   </div>
                 </div>
+
+                {!isRoasting && chartData.length > 0 && (
+                  <div className="mt-6 p-4 bg-accent-amber/10 border border-accent-amber/30 rounded-lg space-y-3">
+                    <p className="text-accent-amber font-semibold">Roast Complete</p>
+                    <div className="flex gap-3">
+                      <button className="flex-1 px-4 py-2 bg-accent-amber text-primary rounded-lg hover:shadow-lg transition font-semibold text-sm">
+                        View Analysis
+                      </button>
+                      <button
+                        onClick={handleBackToDashboard}
+                        className="flex-1 px-4 py-2 bg-elevated border border-text-muted/30 text-text-primary rounded-lg hover:border-accent-amber transition font-semibold text-sm"
+                      >
+                        Back to Dashboard
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

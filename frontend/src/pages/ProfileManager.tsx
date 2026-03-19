@@ -21,9 +21,10 @@ export const ProfileManager: React.FC = () => {
     try {
       setIsLoading(true)
       const response = await profilesAPI.list(1, 50)
-      setProfiles(response.data)
+      setProfiles(Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [])
     } catch (err) {
-      toast.error('Failed to load profiles')
+      console.error('Failed to load profiles:', err)
+      setProfiles([])
     } finally {
       setIsLoading(false)
     }
@@ -102,7 +103,22 @@ export const ProfileManager: React.FC = () => {
           </button>
         </div>
 
+        {/* Empty State */}
+        {profiles.length === 0 && templates.length === 0 && (
+          <div className="bg-card rounded-xl border border-elevated p-12 text-center">
+            <p className="text-text-primary text-lg font-semibold mb-3">No profiles yet</p>
+            <p className="text-text-secondary mb-6">Create your first AI profile to get started</p>
+            <button
+              onClick={() => navigate('/profiles')}
+              className="px-6 py-3 bg-gradient-to-r from-accent-amber to-accent-gold text-primary rounded-lg font-semibold hover:shadow-lg transition"
+            >
+              Create Your First Profile
+            </button>
+          </div>
+        )}
+
         {/* Profile Grid */}
+        {profiles.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {profiles.map((profile) => (
             <div
@@ -190,6 +206,7 @@ export const ProfileManager: React.FC = () => {
             </div>
           ))}
         </div>
+        )}
 
         {/* Templates section */}
         {templates.length > 0 && (
@@ -218,18 +235,6 @@ export const ProfileManager: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {profiles.length === 0 && templates.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-espresso-400 text-lg mb-4">No profiles yet</p>
-            <button
-              onClick={() => navigate('/profiles')}
-              className="px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition font-semibold"
-            >
-              Create Your First Profile
-            </button>
           </div>
         )}
       </div>

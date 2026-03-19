@@ -39,9 +39,10 @@ export const RoastHistory: React.FC = () => {
         1,
         50
       )
-      setRoasts(response.data)
+      setRoasts(Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [])
     } catch (err) {
-      toast.error('Failed to load roasts')
+      console.error('Failed to load roasts:', err)
+      setRoasts([])
     } finally {
       setIsLoading(false)
     }
@@ -184,31 +185,43 @@ export const RoastHistory: React.FC = () => {
                 )}
               </div>
 
-              {roasts.map((roast) => (
-                <div
-                  key={roast.id}
-                  className={`p-3 rounded-lg border transition cursor-pointer ${
-                    selectedRoast?.id === roast.id
-                      ? 'bg-accent-amber/20 border-accent-amber'
-                      : selectedForCompare.includes(roast.id)
-                        ? 'bg-info/20 border-info'
-                        : 'bg-elevated border-elevated hover:border-accent-amber'
-                  }`}
-                  onClick={() => {
-                    if (compareMode) {
-                      toggleCompare(roast.id)
-                    } else {
-                      handleSelectRoast(roast)
-                    }
-                  }}
-                >
-                  <p className="font-semibold text-accent-gold">{roast.batchNumber}</p>
-                  <p className="text-text-secondary text-xs">{roast.coffeeOrigin}</p>
-                  {roast.qualityRating && (
-                    <p className="text-accent-gold text-xs mt-1">Rating: {Number(roast.qualityRating || 0).toFixed(1)}/10</p>
-                  )}
+              {roasts.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-text-secondary mb-3">No roasts yet</p>
+                  <button
+                    onClick={() => navigate('/monitor')}
+                    className="text-accent-amber hover:text-accent-gold transition font-semibold text-sm"
+                  >
+                    Start your first roast
+                  </button>
                 </div>
-              ))}
+              ) : (
+                roasts.map((roast) => (
+                  <div
+                    key={roast.id}
+                    className={`p-3 rounded-lg border transition cursor-pointer ${
+                      selectedRoast?.id === roast.id
+                        ? 'bg-accent-amber/20 border-accent-amber'
+                        : selectedForCompare.includes(roast.id)
+                          ? 'bg-info/20 border-info'
+                          : 'bg-elevated border-elevated hover:border-accent-amber'
+                    }`}
+                    onClick={() => {
+                      if (compareMode) {
+                        toggleCompare(roast.id)
+                      } else {
+                        handleSelectRoast(roast)
+                      }
+                    }}
+                  >
+                    <p className="font-semibold text-accent-gold">{roast.batchNumber}</p>
+                    <p className="text-text-secondary text-xs">{roast.coffeeOrigin}</p>
+                    {roast.qualityRating && (
+                      <p className="text-accent-gold text-xs mt-1">Rating: {Number(roast.qualityRating || 0).toFixed(1)}/10</p>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
 
             {compareMode && selectedForCompare.length >= 2 && (

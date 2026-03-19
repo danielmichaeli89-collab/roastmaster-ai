@@ -12,6 +12,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
+import { BarChart3 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Layout, LoadingSpinner } from '../components'
 import { analyticsAPI } from '../api'
@@ -96,13 +97,19 @@ export const Analytics: React.FC = () => {
           </div>
         </div>
 
-        {/* AI Insights Banner */}
-        {aiInsights && (
+        {/* Empty State or AI Insights Banner */}
+        {!aiInsights && qualityData.length === 0 && devTimeData.length === 0 && originData.length === 0 && profileData.length === 0 && rorData.length === 0 ? (
+          <div className="bg-card rounded-xl border border-elevated p-12 text-center">
+            <BarChart3 size={48} className="text-accent-amber/50 mx-auto mb-4" />
+            <p className="text-text-primary text-lg font-semibold mb-2">No roasting data yet</p>
+            <p className="text-text-secondary">Start roasting to see analytics and AI insights</p>
+          </div>
+        ) : aiInsights ? (
           <div className="bg-gradient-to-r from-accent-amber/20 to-accent-gold/20 border border-accent-amber/50 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-accent-amber mb-3">Generated Summary</h3>
             <p className="text-text-primary leading-relaxed">{aiInsights}</p>
           </div>
-        )}
+        ) : null}
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

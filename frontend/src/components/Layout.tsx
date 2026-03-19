@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import {
   X,
   Home,
@@ -13,6 +14,7 @@ import {
   Clock,
   Bell,
   Activity,
+  Upload,
 } from 'lucide-react'
 import { useAuth } from '../hooks'
 
@@ -62,6 +64,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, isRoasting = false }) 
     {
       title: 'SYSTEM',
       items: [
+        { path: '/import', icon: <Upload size={20} />, label: 'Import CSV' },
         { path: '/settings', icon: <Settings size={20} />, label: 'Settings' },
       ],
     },
@@ -190,7 +193,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, isRoasting = false }) 
                 <p className="text-success text-sm font-medium">Live Roast</p>
               </div>
             )}
-            <button className="p-2 hover:bg-elevated rounded-lg transition-colors relative">
+            <button
+              onClick={() => toast.success('No new notifications')}
+              className="p-2 hover:bg-elevated rounded-lg transition-colors relative"
+              title="Notifications"
+            >
               <Bell size={20} className="text-text-secondary" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full" />
             </button>

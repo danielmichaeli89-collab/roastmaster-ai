@@ -226,10 +226,10 @@ export const Settings: React.FC = () => {
           <h3 className="text-xl font-semibold text-accent-amber mb-6">Preferences</h3>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-elevated rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-elevated/50 rounded-lg border border-text-muted border-opacity-20 opacity-60 cursor-not-allowed">
               <div>
                 <p className="font-semibold text-text-primary">Dark Mode</p>
-                <p className="text-text-secondary text-sm">Always enabled for this app</p>
+                <p className="text-text-secondary text-sm">Always on - optimized for roasting environments</p>
               </div>
               <div className="w-12 h-6 bg-amber-600 rounded-full relative">
                 <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />

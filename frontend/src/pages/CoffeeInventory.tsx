@@ -24,6 +24,8 @@ export const CoffeeInventory: React.FC = () => {
     expectedFlavorNotes: '',
     supplier: '',
     lotNumber: '',
+    variety: '',
+    altitude: '',
   })
 
   useEffect(() => {
@@ -69,6 +71,8 @@ export const CoffeeInventory: React.FC = () => {
       expectedFlavorNotes: '',
       supplier: '',
       lotNumber: '',
+      variety: '',
+      altitude: '',
     })
     setShowModal(true)
   }
@@ -86,6 +90,8 @@ export const CoffeeInventory: React.FC = () => {
       expectedFlavorNotes: coffee.expectedFlavorNotes || '',
       supplier: coffee.supplierName || '',
       lotNumber: coffee.lotNumber || '',
+      variety: (coffee as any).variety || '',
+      altitude: (coffee as any).altitude || '',
     })
     setShowModal(true)
   }
@@ -113,12 +119,12 @@ export const CoffeeInventory: React.FC = () => {
     try {
       if (selectedCoffee) {
         await inventoryAPI.update(selectedCoffee.id, apiData as any)
-        toast.success('Coffee updated')
+        toast.success('Coffee updated successfully!')
       } else {
         await inventoryAPI.create(apiData as any)
         toast.success('Coffee added successfully!')
       }
-      loadCoffees()
+      await loadCoffees()
       setShowModal(false)
     } catch (err: any) {
       console.error('Save coffee error:', err)
@@ -348,6 +354,28 @@ export const CoffeeInventory: React.FC = () => {
                     step="0.1"
                     value={formData.moisturePercent}
                     onChange={(e) => setFormData((prev) => ({ ...prev, moisturePercent: Number(e.target.value) }))}
+                    className="w-full px-4 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Variety</label>
+                  <input
+                    type="text"
+                    value={(formData as any).variety}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, variety: e.target.value } as any))}
+                    placeholder="e.g., Bourbon, Typica"
+                    className="w-full px-4 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Altitude (m)</label>
+                  <input
+                    type="number"
+                    value={(formData as any).altitude}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, altitude: e.target.value } as any))}
+                    placeholder="e.g., 1500"
                     className="w-full px-4 py-2 bg-elevated text-text-primary rounded-lg border border-elevated focus:outline-none focus:ring-2 focus:ring-accent-amber"
                   />
                 </div>

@@ -94,6 +94,14 @@ export const CuppingForm: React.FC = () => {
           <p className="text-text-secondary mt-1">Score and analyze this coffee's sensory profile</p>
         </div>
 
+        {!coffeeId && (
+          <div className="bg-card rounded-xl border border-elevated p-12 text-center">
+            <p className="text-text-primary text-lg font-semibold mb-2">No coffee selected</p>
+            <p className="text-text-secondary">Complete a roast first, then add cupping notes</p>
+          </div>
+        )}
+
+        {coffeeId && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Scoring panel */}
           <div className="lg:col-span-2 space-y-6">
@@ -250,6 +258,7 @@ export const CuppingForm: React.FC = () => {
             </button>
           </div>
         </div>
+        )}
       </div>
     </Layout>
   )
