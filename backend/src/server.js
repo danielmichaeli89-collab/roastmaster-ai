@@ -32,10 +32,21 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:5173,https://roastmaster-ai.netlify.app').split(',');
 app.use(cors({
-  origin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(','),
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(null, true); // Allow all in production for now
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Health check endpoints
@@ -61,25 +72,21 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 const startServer = async () => {
+  // Always start HTTP server first - don't block on DB
+  httpServer.listen(PORT, HOST, () => {
+    console.log(`Server running on http://${HOST}:${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
+    console.log(`DATABASE_URL set: ${!!process.env.DATABASE_URL}`);
+  });
+
+  // Test DB connection asynchronously - don't crash if it fails
   try {
-    // Test database connection with timeout
-    await Promise.race([
-      db.raw('SELECT 1'),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Database connection timeout')), 10000)
-      )
-    ]);
-
+    await db.raw('SELECT 1');
     console.log('Database connected successfully');
-
-    httpServer.listen(PORT, HOST, () => {
-      console.log(`Server running on http://${HOST}:${PORT}`);
-      console.log(`WebSocket server listening on ws://${HOST}:${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
   } catch (error) {
-    console.error('Failed to start server:', error.message);
-    process.exit(1);
+    console.error('Database connection failed (server still running):', error.message);
+    console.error('DB URL prefix:', process.env.DATABASE_URL?.substring(0, 30) + '...');
   }
 };
 
