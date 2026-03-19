@@ -67,6 +67,7 @@ export const createCoffee = async (req, res) => {
 
   try {
     const coffeeId = uuidv4();
+    const now = new Date();
 
     const coffeeData = {
       id: coffeeId,
@@ -84,7 +85,9 @@ export const createCoffee = async (req, res) => {
       harvest_year: harvest_year ? parseInt(harvest_year) : null,
       flavor_notes: flavor_notes || null,
       quantity_kg: quantity_kg ? parseFloat(quantity_kg) : null,
-      notes: notes || null
+      notes: notes || null,
+      created_at: now,
+      updated_at: now
     };
 
     await db('green_coffees').insert(coffeeData);

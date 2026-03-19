@@ -3,11 +3,53 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../config/database.js';
 
+/**
+ * Helper: Format user object with all expected fields
+ */
+const formatUser = (dbUser) => {
+  return {
+    id: dbUser.id,
+    email: dbUser.email,
+    username: dbUser.username || null,
+    fullName: dbUser.full_name || null,
+    role: dbUser.role || 'roaster',
+    organizationName: dbUser.organization_name || null,
+    roesterSerialNumber: dbUser.roester_serial_number || null,
+    isActive: dbUser.is_active !== false,
+    lastLoginAt: dbUser.last_login_at || null,
+    createdAt: dbUser.created_at,
+    updatedAt: dbUser.updated_at
+  };
+};
+
+/**
+ * Helper: Generate access and refresh tokens
+ */
+const generateTokens = (userId, email, role) => {
+  const accessToken = jwt.sign(
+    { id: userId, email, role },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+
+  const refreshToken = jwt.sign(
+    { id: userId, email, role, type: 'refresh' },
+    process.env.JWT_SECRET,
+    { expiresIn: '30d' }
+  );
+
+  return { accessToken, refreshToken, expiresIn: 604800 }; // 7 days in seconds
+};
+
 export const register = async (req, res) => {
-  const { email, password, name } = req.body;
+  const { email, password, username, fullName, organizationName, roesterSerialNumber } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' });
+  }
+
+  if (!username) {
+    return res.status(400).json({ error: 'Username required' });
   }
 
   try {
@@ -16,26 +58,39 @@ export const register = async (req, res) => {
       return res.status(409).json({ error: 'Email already registered' });
     }
 
+    const usernameExists = await db('users').where('username', username).first();
+    if (usernameExists) {
+      return res.status(409).json({ error: 'Username already taken' });
+    }
+
     const passwordHash = await bcryptjs.hash(password, 10);
     const userId = uuidv4();
+    const now = new Date();
 
     await db('users').insert({
       id: userId,
       email,
+      username,
       password_hash: passwordHash,
-      name: name || email.split('@')[0],
-      role: 'roaster'
+      full_name: fullName || null,
+      organization_name: organizationName || null,
+      roester_serial_number: roesterSerialNumber || null,
+      role: 'roaster',
+      is_active: true,
+      created_at: now,
+      updated_at: now
     });
 
-    const token = jwt.sign(
-      { id: userId, email, role: 'roaster' },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
+    const user = await db('users').where('id', userId).first();
+    const { accessToken, refreshToken, expiresIn } = generateTokens(userId, email, 'roaster');
 
     return res.status(201).json({
-      user: { id: userId, email, name: name || email.split('@')[0], role: 'roaster' },
-      token
+      user: formatUser(user),
+      token: {
+        accessToken,
+        refreshToken,
+        expiresIn
+      }
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -63,20 +118,22 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
+    // Update last login time
+    await db('users').where('id', user.id).update({
+      last_login_at: new Date(),
+      updated_at: new Date()
+    });
+
+    const updatedUser = await db('users').where('id', user.id).first();
+    const { accessToken, refreshToken, expiresIn } = generateTokens(user.id, user.email, user.role);
 
     return res.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role
-      },
-      token
+      user: formatUser(updatedUser),
+      token: {
+        accessToken,
+        refreshToken,
+        expiresIn
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -92,12 +149,7 @@ export const getCurrentUser = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    return res.json({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role
-    });
+    return res.json(formatUser(user));
   } catch (error) {
     console.error('Get user error:', error);
     return res.status(500).json({ error: 'Failed to fetch user' });
@@ -106,7 +158,7 @@ export const getCurrentUser = async (req, res) => {
 
 export const updateUserProfile = async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { fullName, organizationName, roesterSerialNumber } = req.body;
 
     const user = await db('users').where('id', req.user.id).first();
 
@@ -114,19 +166,12 @@ export const updateUserProfile = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Check if new email is already taken (if changed)
-    if (email && email !== user.email) {
-      const existing = await db('users').where('email', email).first();
-      if (existing) {
-        return res.status(409).json({ error: 'Email already in use' });
-      }
-    }
+    const updates = { updated_at: new Date() };
+    if (fullName !== undefined) updates.full_name = fullName;
+    if (organizationName !== undefined) updates.organization_name = organizationName;
+    if (roesterSerialNumber !== undefined) updates.roester_serial_number = roesterSerialNumber;
 
-    const updates = {};
-    if (name) updates.name = name;
-    if (email) updates.email = email;
-
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(updates).length === 1) {
       return res.status(400).json({ error: 'No fields to update' });
     }
 
@@ -134,14 +179,101 @@ export const updateUserProfile = async (req, res) => {
 
     const updated = await db('users').where('id', req.user.id).first();
 
-    return res.json({
-      id: updated.id,
-      email: updated.email,
-      name: updated.name,
-      role: updated.role
-    });
+    return res.json(formatUser(updated));
   } catch (error) {
     console.error('Update profile error:', error);
     return res.status(500).json({ error: 'Failed to update profile' });
+  }
+};
+
+export const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken: token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Refresh token required' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+
+    if (decoded.type !== 'refresh') {
+      return res.status(401).json({ error: 'Invalid token type' });
+    }
+
+    const user = await db('users').where('id', decoded.id).first();
+
+    if (!user || !user.is_active) {
+      return res.status(401).json({ error: 'User not found or inactive' });
+    }
+
+    const { accessToken, refreshToken: newRefreshToken, expiresIn } = generateTokens(
+      user.id,
+      user.email,
+      user.role
+    );
+
+    return res.json({
+      token: {
+        accessToken,
+        refreshToken: newRefreshToken,
+        expiresIn
+      }
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    return res.status(500).json({ error: 'Failed to refresh token' });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current and new password required' });
+    }
+
+    const user = await db('users').where('id', req.user.id).first();
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const passwordMatch = await bcryptjs.compare(currentPassword, user.password_hash);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    const passwordHash = await bcryptjs.hash(newPassword, 10);
+
+    await db('users').where('id', req.user.id).update({
+      password_hash: passwordHash,
+      updated_at: new Date()
+    });
+
+    return res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    return res.status(500).json({ error: 'Failed to change password' });
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    // Update last_login_at to track logout timestamp if desired
+    await db('users').where('id', req.user.id).update({
+      updated_at: new Date()
+    });
+
+    return res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.status(500).json({ error: 'Logout failed' });
   }
 };
