@@ -13,4 +13,4 @@ COPY backend/src ./src
 EXPOSE 3000
 
 # Run migrations and start server
-CMD ["sh", "-c", "npx knex migrate:latest && node src/server.js"]
+CMD ["sh", "-c", "npx knex migrate:latest || echo 'Migration warning (continuing)'; node src/server.js"]

@@ -1,67 +1,45 @@
 /**
  * MIGRATION: 010_expand_green_coffees_table.js
- * Expands green_coffees table with detailed sourcing, storage, and quality data
+ * Expands green_coffees table with detailed sourcing, storage, and quality data.
+ * Uses IF NOT EXISTS to safely handle columns that may already exist.
  */
 
 export async function up(knex) {
-  return knex.schema.alterTable('green_coffees', (table) => {
-    // Altitude range (farms that span elevations)
-    table.integer('altitude_min').nullable();
-    table.integer('altitude_max').nullable();
+  const columns = [
+    { name: 'altitude_min', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS altitude_min INTEGER' },
+    { name: 'altitude_max', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS altitude_max INTEGER' },
+    { name: 'harvest_month', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS harvest_month VARCHAR(20)' },
+    { name: 'crop_year', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS crop_year VARCHAR(10)' },
+    { name: 'lot_number', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS lot_number VARCHAR(50)' },
+    { name: 'bag_weight_kg', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS bag_weight_kg DECIMAL(6,2)' },
+    { name: 'bags_purchased', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS bags_purchased INTEGER' },
+    { name: 'bags_remaining', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS bags_remaining INTEGER' },
+    { name: 'purchase_price_usd_per_kg', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS purchase_price_usd_per_kg DECIMAL(8,2)' },
+    { name: 'supplier', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS supplier VARCHAR(100)' },
+    { name: 'certifications', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS certifications TEXT' },
+    { name: 'cupping_score_green', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS cupping_score_green DECIMAL(4,1)' },
+    { name: 'tasting_notes_green', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS tasting_notes_green TEXT' },
+    { name: 'water_activity', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS water_activity DECIMAL(4,3)' },
+    { name: 'defect_count', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS defect_count INTEGER' },
+    { name: 'status', sql: "ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'" },
+    { name: 'arrival_date', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS arrival_date DATE' },
+    { name: 'best_before_date', sql: 'ALTER TABLE green_coffees ADD COLUMN IF NOT EXISTS best_before_date DATE' },
+  ];
 
-    // Harvest tracking
-    table.string('harvest_year', 10).nullable().comment('e.g. "2024/2025"');
-    table.string('harvest_month', 20).nullable();
-    table.string('crop_year', 10).nullable();
-    table.string('lot_number', 50).nullable();
-
-    // Inventory management
-    table.decimal('bag_weight_kg', 6, 2).nullable();
-    table.integer('bags_purchased').nullable();
-    table.integer('bags_remaining').nullable();
-
-    // Cost tracking
-    table.decimal('purchase_price_usd_per_kg', 8, 2).nullable();
-
-    // Sourcing details
-    table.string('supplier', 100).nullable();
-    table.text('certifications').nullable().comment('JSON array: organic, fair_trade, rainforest_alliance, etc.');
-
-    // Pre-roast quality metrics
-    table.decimal('cupping_score_green', 4, 1).nullable().comment('Green bean cupping score from importer');
-    table.text('tasting_notes_green').nullable().comment('Flavor notes from importer/origin');
-
-    // Storage conditions
-    table.decimal('water_activity', 4, 3).nullable().comment('Aw value for storage/freshness');
-    table.integer('defect_count').nullable().comment('Defects per 350g sample (SCA standard)');
-
-    // Status and dates
-    table.string('status', 20).defaultTo('active').comment('active, depleted, archived');
-    table.date('arrival_date').nullable();
-    table.date('best_before_date').nullable();
-  });
+  for (const col of columns) {
+    await knex.raw(col.sql);
+  }
 }
 
 export async function down(knex) {
-  return knex.schema.alterTable('green_coffees', (table) => {
-    table.dropColumn('altitude_min');
-    table.dropColumn('altitude_max');
-    table.dropColumn('harvest_year');
-    table.dropColumn('harvest_month');
-    table.dropColumn('crop_year');
-    table.dropColumn('lot_number');
-    table.dropColumn('bag_weight_kg');
-    table.dropColumn('bags_purchased');
-    table.dropColumn('bags_remaining');
-    table.dropColumn('purchase_price_usd_per_kg');
-    table.dropColumn('supplier');
-    table.dropColumn('certifications');
-    table.dropColumn('cupping_score_green');
-    table.dropColumn('tasting_notes_green');
-    table.dropColumn('water_activity');
-    table.dropColumn('defect_count');
-    table.dropColumn('status');
-    table.dropColumn('arrival_date');
-    table.dropColumn('best_before_date');
-  });
+  const columnsToDrop = [
+    'altitude_min', 'altitude_max', 'harvest_month', 'crop_year', 'lot_number',
+    'bag_weight_kg', 'bags_purchased', 'bags_remaining', 'purchase_price_usd_per_kg',
+    'supplier', 'certifications', 'cupping_score_green', 'tasting_notes_green',
+    'water_activity', 'defect_count', 'status', 'arrival_date', 'best_before_date'
+  ];
+
+  for (const col of columnsToDrop) {
+    await knex.raw(`ALTER TABLE green_coffees DROP COLUMN IF EXISTS ${col}`);
+  }
 }
