@@ -1,0 +1,96 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --ink: #0a0a0a;
+  --ink-2: #14130f;
+  --paper: #e8e3d8;
+  --paper-dim: #c9c2b4;
+  --gold: #d4b986;
+  --gold-2: #b8995f;
+  --teal: #1e3232;
+  --wine: #3a1a1e;
+  --ember: #e09554;
+  font-family: 'Inter', 'Noto Sans Hebrew', system-ui, sans-serif;
+  font-feature-settings: 'ss01', 'cv11';
+  color: var(--paper);
+  background: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+  color: var(--paper);
+}
+
+#root {
+  position: relative;
+  isolation: isolate;
+}
+
+canvas {
+  outline: none;
+  display: block;
+  touch-action: none;
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+
+.serif {
+  font-family: 'Cormorant Garamond', 'Noto Sans Hebrew', serif;
+  font-weight: 300;
+  letter-spacing: 0.01em;
+}
+
+.mono-ish {
+  font-family: 'Inter', monospace;
+  font-feature-settings: 'tnum';
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 300;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
