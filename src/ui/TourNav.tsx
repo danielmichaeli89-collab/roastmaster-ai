@@ -13,7 +13,7 @@ export function TourNav() {
     <nav
       style={{
         position: 'fixed',
-        right: 32,
+        right: 40,
         top: '50%',
         transform: 'translateY(-50%)',
         display: 'flex',
@@ -23,8 +23,8 @@ export function TourNav() {
         animation: 'fadeIn 1200ms ease 600ms both',
       }}
     >
-      <div className="mono-ish" style={{ color: 'var(--paper-dim)', opacity: 0.5, marginBottom: 16, fontSize: 9, textAlign: 'right' }}>
-        תחנות הסיור
+      <div className="mono-ish" style={{ color: 'var(--paper-dim)', opacity: 0.5, marginBottom: 18, fontSize: 9, textAlign: 'right', letterSpacing: '0.32em' }}>
+        TOUR
       </div>
       {TOUR_POINTS.map((p) => {
         const active = currentPoint === p.id;
@@ -37,18 +37,17 @@ export function TourNav() {
               display: 'flex',
               alignItems: 'center',
               gap: 14,
-              padding: '10px 0',
-              opacity: isTransitioning && !active ? 0.4 : 1,
+              padding: '9px 0',
+              opacity: isTransitioning && !active ? 0.35 : 1,
               transition: 'opacity 280ms ease',
               cursor: isTransitioning ? 'wait' : 'pointer',
-              direction: 'ltr',
             }}
           >
             <span
               className="mono-ish"
               style={{
                 color: active ? 'var(--gold)' : 'var(--paper-dim)',
-                opacity: active ? 1 : 0.6,
+                opacity: active ? 1 : 0.55,
                 fontSize: 9,
                 width: 22,
                 transition: 'color 280ms ease',
@@ -58,26 +57,26 @@ export function TourNav() {
             </span>
             <span
               style={{
-                width: active ? 48 : 24,
+                width: active ? 52 : 26,
                 height: 1,
                 background: active ? 'var(--gold)' : 'var(--paper-dim)',
-                opacity: active ? 1 : 0.4,
-                transition: 'all 380ms ease',
+                opacity: active ? 1 : 0.35,
+                transition: 'all 400ms ease',
               }}
             />
             <span
               className="serif"
               style={{
-                fontSize: 16,
+                fontSize: 17,
                 fontStyle: 'italic',
                 color: active ? 'var(--paper)' : 'var(--paper-dim)',
-                opacity: active ? 1 : 0.7,
+                opacity: active ? 1 : 0.65,
                 transition: 'color 280ms ease, opacity 280ms ease',
-                minWidth: 132,
+                minWidth: 150,
                 textAlign: 'left',
               }}
             >
-              {p.titleEn}
+              {p.title}
             </span>
           </button>
         );

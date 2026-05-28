@@ -3,13 +3,11 @@ import { Loading } from './ui/Loading';
 import { TourNav } from './ui/TourNav';
 import { InfoPanel } from './ui/InfoPanel';
 import { Brand } from './ui/Brand';
-import { Controls } from './ui/Controls';
 
 export default function App() {
   return (
-    <main style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: '#070707' }}>
+    <main style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: '#080808' }}>
       <Scene />
-      {/* Subtle edge fall-off; the heavy lifting is done by the postFX Vignette */}
       <div
         aria-hidden
         style={{
@@ -18,17 +16,13 @@ export default function App() {
           pointerEvents: 'none',
           zIndex: 10,
           background:
-            'radial-gradient(ellipse 120% 90% at center, transparent 50%, rgba(0,0,0,0.2) 100%)',
+            'radial-gradient(ellipse 140% 110% at center, transparent 60%, rgba(0,0,0,0.22) 100%)',
         }}
       />
-
-      {/* Grain overlay - subtle film grain for photographic realism */}
       <FilmGrain />
-
       <Brand />
       <TourNav />
       <InfoPanel />
-      <Controls />
       <Loading />
     </main>
   );
@@ -43,7 +37,7 @@ function FilmGrain() {
         inset: 0,
         pointerEvents: 'none',
         zIndex: 12,
-        opacity: 0.05,
+        opacity: 0.025,
         mixBlendMode: 'overlay',
       }}
     >

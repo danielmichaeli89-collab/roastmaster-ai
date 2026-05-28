@@ -48,12 +48,11 @@ export function Loading() {
         backdropFilter: 'blur(2px)',
       }}
     >
-      {/* Background subtle vinyl groove animation */}
       <BackgroundVinyl />
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 2 }}>
         <div className="mono-ish" style={{ color: 'var(--gold)', opacity: 0.7 }}>
-          MMXXVI · LISTENING BAR
+          MMXXVI · ESPRESSO & VINYL
         </div>
         <h1
           className="serif"
@@ -73,22 +72,22 @@ export function Loading() {
           Nocturne
         </h1>
         <div
-          className="serif"
+          className="mono-ish"
           style={{
-            fontSize: 18,
-            fontStyle: 'italic',
             color: 'var(--paper-dim)',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
+            letterSpacing: '0.32em',
+            opacity: 0.7,
+            fontSize: 11,
+            marginTop: 8,
           }}
         >
-          a nocturnal listening bar
+          SPECIALTY COFFEE · COCKTAILS · VINYL
         </div>
       </div>
 
       <div style={{ width: 320, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', zIndex: 2 }}>
         <div className="mono-ish" style={{ opacity: 0.5, fontSize: 10 }}>
-          {isLoaded ? 'READY' : 'PREPARING SCENE'} · {Math.floor(progress)}%
+          {isLoaded ? 'READY' : 'PREPARING TOUR'} · {Math.floor(progress)}%
         </div>
         <div style={{ width: '100%', height: 1, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
           <div
@@ -147,10 +146,9 @@ export function Loading() {
           lineHeight: 1.8,
           zIndex: 2,
         }}
-        dir="ltr"
       >
-        <div>An immersive virtual tour</div>
-        <div>Rendered in WebGL · Real time</div>
+        <div>360° virtual tour</div>
+        <div>Drag to look · scroll to zoom</div>
       </div>
     </div>
   );

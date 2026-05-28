@@ -1,66 +1,72 @@
-import { Suspense, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { PerspectiveCamera, AdaptiveDpr, AdaptiveEvents } from '@react-three/drei';
+import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
-import { Cafe } from './Cafe';
-import { TourCamera } from './camera/TourCamera';
-import { PostFX } from './PostFX';
-import { ProceduralEnvironment } from './Environment';
+import {
+  EffectComposer,
+  Bloom,
+  Vignette,
+  ChromaticAberration,
+  BrightnessContrast,
+  ToneMapping,
+  SMAA,
+} from '@react-three/postprocessing';
+import { ToneMappingMode, BlendFunction } from 'postprocessing';
+import { useMemo } from 'react';
+import { PanoramaSphere } from '../viewer/PanoramaSphere';
+import { CameraController } from '../viewer/CameraController';
 import { useTour } from '../store';
-import { getTourPoint } from '../data/tour-points';
 
 export function Scene() {
   const setLoaded = useTour((s) => s.setLoaded);
-  const currentPoint = useTour((s) => s.currentPoint);
-  const initial = getTourPoint(currentPoint);
-
   useEffect(() => {
-    // Signal loaded after a short delay to let textures/lights settle
-    const t = setTimeout(() => setLoaded(true), 350);
+    const t = setTimeout(() => setLoaded(true), 300);
     return () => clearTimeout(t);
   }, [setLoaded]);
 
+  const chromaOffset = useMemo(() => new THREE.Vector2(0.0003, 0.0003), []);
+
   return (
     <Canvas
-      shadows
-      dpr={[1, 2]}
+      dpr={[1.5, 2.5]}
       gl={{
-        antialias: false,
+        antialias: true,
         powerPreference: 'high-performance',
         alpha: false,
         stencil: false,
-        depth: true,
+        depth: false,
       }}
       onCreated={({ gl, scene }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.15;
+        gl.toneMappingExposure = 1.0;
         gl.outputColorSpace = THREE.SRGBColorSpace;
-        gl.shadowMap.type = THREE.PCFSoftShadowMap;
-        scene.background = new THREE.Color('#070707');
-        scene.fog = new THREE.FogExp2(0x070707, 0.025);
+        scene.background = new THREE.Color('#080808');
       }}
-      style={{ position: 'absolute', inset: 0, background: '#070707' }}
+      style={{ position: 'absolute', inset: 0, background: '#080808' }}
     >
-      <PerspectiveCamera
-        makeDefault
-        position={initial.camera}
-        fov={initial.fov}
-        near={0.05}
-        far={60}
-      />
+      <PerspectiveCamera makeDefault position={[0, 0, 0]} fov={75} near={0.1} far={200} />
+      <PanoramaSphere />
+      <CameraController />
 
-      <Suspense fallback={null}>
-        {/* Procedural environment map — no external HDR fetch */}
-        <ProceduralEnvironment />
-
-        <Cafe />
-      </Suspense>
-
-      <TourCamera />
-      <PostFX />
-
-      <AdaptiveDpr pixelated />
-      <AdaptiveEvents />
+      <EffectComposer multisampling={4} enableNormalPass={false}>
+        <SMAA />
+        <Bloom
+          intensity={0.18}
+          luminanceThreshold={0.86}
+          luminanceSmoothing={0.25}
+          mipmapBlur
+          radius={0.4}
+        />
+        <ChromaticAberration
+          offset={chromaOffset}
+          radialModulation
+          modulationOffset={0.5}
+          blendFunction={BlendFunction.NORMAL}
+        />
+        <BrightnessContrast brightness={0.0} contrast={0.04} />
+        <Vignette eskil={false} offset={0.28} darkness={0.35} />
+        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      </EffectComposer>
     </Canvas>
   );
 }
