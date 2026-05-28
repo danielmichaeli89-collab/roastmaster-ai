@@ -18,21 +18,20 @@ export function InfoPanel() {
         key={pt.id}
         style={{
           position: 'fixed',
-          left: 40,
-          bottom: 40,
-          maxWidth: 460,
+          left: 48,
+          bottom: 48,
+          maxWidth: 440,
           color: 'var(--paper)',
           zIndex: 18,
-          opacity: showInfo ? (isTransitioning ? 0.3 : 1) : 0,
+          opacity: showInfo ? (isTransitioning ? 0.35 : 1) : 0,
           pointerEvents: showInfo ? 'auto' : 'none',
-          transition: 'opacity 580ms ease',
-          animation: 'fadeIn 800ms ease',
+          transition: 'opacity 600ms ease',
+          animation: 'fadeIn 900ms ease',
           textAlign: 'left',
-          direction: 'ltr',
         }}
       >
-        <div className="mono-ish" style={{ color: 'var(--gold)', opacity: 0.7, marginBottom: 14 }}>
-          {pt.label} · {pt.subtitleEn}
+        <div className="mono-ish" style={{ color: 'var(--gold)', opacity: 0.75, marginBottom: 14 }}>
+          {pt.label} · {pt.subtitle}
         </div>
         <h2
           className="serif"
@@ -42,60 +41,31 @@ export function InfoPanel() {
             margin: 0,
             lineHeight: 0.95,
             fontWeight: 300,
-            letterSpacing: '0.01em',
+            letterSpacing: '0.005em',
             color: 'var(--paper)',
           }}
         >
-          {pt.titleEn}
+          {pt.title}
         </h2>
-        <div
-          className="serif"
-          style={{
-            fontSize: 22,
-            fontStyle: 'italic',
-            color: 'var(--paper-dim)',
-            margin: '10px 0 18px',
-            direction: 'rtl',
-            textAlign: 'right',
-            fontWeight: 300,
-          }}
-        >
-          {pt.titleHe}
-        </div>
 
         <p
           style={{
             fontSize: 13,
             lineHeight: 1.75,
             color: 'var(--paper-dim)',
-            margin: 0,
+            margin: '20px 0 0',
             maxWidth: 420,
             fontWeight: 300,
           }}
         >
-          {pt.descriptionEn}
-        </p>
-        <p
-          style={{
-            fontSize: 13,
-            lineHeight: 1.75,
-            color: 'var(--paper-dim)',
-            margin: '12px 0 0',
-            maxWidth: 420,
-            direction: 'rtl',
-            textAlign: 'right',
-            opacity: 0.85,
-            fontWeight: 300,
-          }}
-        >
-          {pt.descriptionHe}
+          {pt.description}
         </p>
 
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr 1fr',
-            gap: 12,
+            gap: 14,
             marginTop: 24,
             padding: '16px 0 0',
             borderTop: '1px solid rgba(232,227,216,0.1)',
@@ -103,10 +73,10 @@ export function InfoPanel() {
         >
           {pt.details.map((d) => (
             <div key={d.label}>
-              <div className="mono-ish" style={{ opacity: 0.5, fontSize: 8, marginBottom: 4 }}>
+              <div className="mono-ish" style={{ opacity: 0.5, fontSize: 8.5, marginBottom: 5 }}>
                 {d.label}
               </div>
-              <div className="serif" style={{ fontSize: 13, color: 'var(--paper)', fontStyle: 'italic', fontWeight: 300 }}>
+              <div className="serif" style={{ fontSize: 13, color: 'var(--paper)', fontStyle: 'italic', fontWeight: 300, lineHeight: 1.3 }}>
                 {d.value}
               </div>
             </div>
@@ -114,24 +84,23 @@ export function InfoPanel() {
         </div>
       </div>
 
-      {/* Hide/show toggle */}
       <button
         onClick={toggleInfo}
         style={{
           position: 'fixed',
-          left: 40,
-          top: 40,
+          left: 48,
+          top: 48,
           zIndex: 19,
           color: 'var(--paper-dim)',
-          opacity: 0.6,
-          fontSize: 10,
-          letterSpacing: '0.24em',
+          opacity: 0.55,
+          fontSize: 9.5,
+          letterSpacing: '0.32em',
           textTransform: 'uppercase',
           padding: 8,
         }}
         className="mono-ish"
       >
-        {showInfo ? '— hide info' : '+ show info'}
+        {showInfo ? '— hide' : '+ info'}
       </button>
     </>
   );

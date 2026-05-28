@@ -1,6 +1,6 @@
 import { Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { PerspectiveCamera, AdaptiveDpr, AdaptiveEvents } from '@react-three/drei';
+import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { Cafe } from './Cafe';
 import { TourCamera } from './camera/TourCamera';
@@ -15,7 +15,6 @@ export function Scene() {
   const initial = getTourPoint(currentPoint);
 
   useEffect(() => {
-    // Signal loaded after a short delay to let textures/lights settle
     const t = setTimeout(() => setLoaded(true), 350);
     return () => clearTimeout(t);
   }, [setLoaded]);
@@ -23,9 +22,9 @@ export function Scene() {
   return (
     <Canvas
       shadows
-      dpr={[1, 2]}
+      dpr={[1.5, Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 2, 3)]}
       gl={{
-        antialias: false,
+        antialias: true,
         powerPreference: 'high-performance',
         alpha: false,
         stencil: false,
@@ -33,11 +32,12 @@ export function Scene() {
       }}
       onCreated={({ gl, scene }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.15;
+        gl.toneMappingExposure = 1.25;
         gl.outputColorSpace = THREE.SRGBColorSpace;
+        gl.shadowMap.enabled = true;
         gl.shadowMap.type = THREE.PCFSoftShadowMap;
         scene.background = new THREE.Color('#070707');
-        scene.fog = new THREE.FogExp2(0x070707, 0.025);
+        scene.fog = new THREE.FogExp2(0x080707, 0.02);
       }}
       style={{ position: 'absolute', inset: 0, background: '#070707' }}
     >
@@ -50,17 +50,12 @@ export function Scene() {
       />
 
       <Suspense fallback={null}>
-        {/* Procedural environment map — no external HDR fetch */}
         <ProceduralEnvironment />
-
         <Cafe />
       </Suspense>
 
       <TourCamera />
       <PostFX />
-
-      <AdaptiveDpr pixelated />
-      <AdaptiveEvents />
     </Canvas>
   );
 }

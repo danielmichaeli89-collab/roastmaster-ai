@@ -3,7 +3,8 @@ import { create } from 'zustand';
 export type TourPointId =
   | 'entrance'
   | 'bar'
-  | 'dj'
+  | 'modbar'
+  | 'grinders'
   | 'speaker'
   | 'dining'
   | 'booth';
@@ -14,15 +15,11 @@ interface TourState {
   currentPoint: TourPointId;
   isTransitioning: boolean;
   showInfo: boolean;
-  qualityTier: 'high' | 'medium';
-  cinematicMode: boolean;
   setLoaded: (v: boolean) => void;
   start: () => void;
   goTo: (id: TourPointId) => void;
   setTransitioning: (v: boolean) => void;
   toggleInfo: () => void;
-  setQuality: (t: 'high' | 'medium') => void;
-  toggleCinematic: () => void;
 }
 
 export const useTour = create<TourState>((set) => ({
@@ -31,8 +28,6 @@ export const useTour = create<TourState>((set) => ({
   currentPoint: 'entrance',
   isTransitioning: false,
   showInfo: true,
-  qualityTier: 'high',
-  cinematicMode: true,
   setLoaded: (v) => set({ isLoaded: v }),
   start: () => set({ hasStarted: true }),
   goTo: (id) =>
@@ -41,6 +36,4 @@ export const useTour = create<TourState>((set) => ({
     ),
   setTransitioning: (v) => set({ isTransitioning: v }),
   toggleInfo: () => set((s) => ({ showInfo: !s.showInfo })),
-  setQuality: (t) => set({ qualityTier: t }),
-  toggleCinematic: () => set((s) => ({ cinematicMode: !s.cinematicMode })),
 }));

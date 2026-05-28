@@ -16,7 +16,7 @@
   --teal: #1e3232;
   --wine: #3a1a1e;
   --ember: #e09554;
-  font-family: 'Inter', 'Noto Sans Hebrew', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-feature-settings: 'ss01', 'cv11';
   color: var(--paper);
   background: var(--ink);
@@ -61,7 +61,7 @@ button {
 }
 
 .serif {
-  font-family: 'Cormorant Garamond', 'Noto Sans Hebrew', serif;
+  font-family: 'Cormorant Garamond', serif;
   font-weight: 300;
   letter-spacing: 0.01em;
 }

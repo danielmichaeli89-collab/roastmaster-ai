@@ -17,7 +17,6 @@ export function TourCamera() {
   const { camera } = useThree();
   const currentPoint = useTour((s) => s.currentPoint);
   const hasStarted = useTour((s) => s.hasStarted);
-  const cinematicMode = useTour((s) => s.cinematicMode);
   const setTransitioning = useTour((s) => s.setTransitioning);
 
   const target = useRef(new THREE.Vector3(0, 1.4, 0));
@@ -74,20 +73,18 @@ export function TourCamera() {
       }
     }
 
-    // Cinematic float — subtle camera breathing when settled
-    if (cinematicMode) {
-      const t = time.current;
-      const floatY = Math.sin(t * 0.4) * 0.012;
-      const floatX = Math.cos(t * 0.27) * 0.008;
-      const floatZ = Math.sin(t * 0.33 + 1.2) * 0.006;
-      tmpVec.set(
-        (transitioning.current ? endCam.x : pt.camera[0]) + floatX,
-        (transitioning.current ? endCam.y : pt.camera[1]) + floatY,
-        (transitioning.current ? endCam.z : pt.camera[2]) + floatZ
-      );
-      if (!transitioning.current) {
-        camera.position.lerp(tmpVec, 0.04);
-      }
+    // Subtle handheld float — always on, very small amplitude
+    const t = time.current;
+    const floatY = Math.sin(t * 0.4) * 0.010;
+    const floatX = Math.cos(t * 0.27) * 0.007;
+    const floatZ = Math.sin(t * 0.33 + 1.2) * 0.005;
+    tmpVec.set(
+      (transitioning.current ? endCam.x : pt.camera[0]) + floatX,
+      (transitioning.current ? endCam.y : pt.camera[1]) + floatY,
+      (transitioning.current ? endCam.z : pt.camera[2]) + floatZ
+    );
+    if (!transitioning.current) {
+      camera.position.lerp(tmpVec, 0.04);
     }
 
     camera.lookAt(target.current);

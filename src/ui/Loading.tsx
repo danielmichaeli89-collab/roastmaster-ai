@@ -53,7 +53,7 @@ export function Loading() {
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 2 }}>
         <div className="mono-ish" style={{ color: 'var(--gold)', opacity: 0.7 }}>
-          MMXXVI · LISTENING BAR
+          MMXXVI · ESPRESSO & VINYL
         </div>
         <h1
           className="serif"
@@ -73,16 +73,16 @@ export function Loading() {
           Nocturne
         </h1>
         <div
-          className="serif"
+          className="mono-ish"
           style={{
-            fontSize: 18,
-            fontStyle: 'italic',
             color: 'var(--paper-dim)',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
+            letterSpacing: '0.32em',
+            opacity: 0.7,
+            fontSize: 11,
+            marginTop: 8,
           }}
         >
-          a nocturnal listening bar
+          SPECIALTY COFFEE · COCKTAILS · VINYL
         </div>
       </div>
 
