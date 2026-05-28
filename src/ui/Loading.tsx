@@ -35,7 +35,7 @@ export function Loading() {
         position: 'fixed',
         inset: 0,
         zIndex: 50,
-        background: 'radial-gradient(ellipse at center, #14131044 0%, #070706ff 80%)',
+        background: 'radial-gradient(ellipse at center, #2a2520 0%, #1a1815 90%)',
         color: 'var(--paper)',
         display: 'flex',
         flexDirection: 'column',

@@ -5,8 +5,10 @@ import { getTourPoint } from '../data/tour-points';
 import { useTour } from '../store';
 import { Hotspots } from './Hotspots';
 
-// Build a procedural placeholder texture that says "Awaiting panorama"
-// so the tour still has structure even before the user uploads images.
+// Procedural placeholder. The final look comes from the AI-generated panoramas
+// the user will drop into /public/panoramas/. This canvas is just to keep the
+// structure visible during authoring — it carries a "PLACEHOLDER" label and
+// sketches a rough horizon + light pools so the eye has something to land on.
 function makePlaceholder(title: string, subtitle: string): THREE.Texture {
   const w = 4096;
   const h = 2048;
@@ -15,58 +17,78 @@ function makePlaceholder(title: string, subtitle: string): THREE.Texture {
   canvas.height = h;
   const ctx = canvas.getContext('2d')!;
 
-  // Smooth dark gradient with a hint of warmth (top dark, middle warm, bottom dark)
+  // Deep moody gradient — top sky-ceiling dark, mid warm horizon, low floor
   const grd = ctx.createLinearGradient(0, 0, 0, h);
-  grd.addColorStop(0.0, '#080808');
-  grd.addColorStop(0.45, '#1a120c');
-  grd.addColorStop(0.55, '#2a1a10');
-  grd.addColorStop(0.62, '#3a2614');
-  grd.addColorStop(0.75, '#1a120c');
-  grd.addColorStop(1.0, '#060606');
+  grd.addColorStop(0.0, '#0c0a09');
+  grd.addColorStop(0.35, '#1f1812');
+  grd.addColorStop(0.55, '#36281c');
+  grd.addColorStop(0.62, '#5c3f24');
+  grd.addColorStop(0.75, '#2a1f17');
+  grd.addColorStop(1.0, '#0a0807');
   ctx.fillStyle = grd;
   ctx.fillRect(0, 0, w, h);
 
-  // Soft "horizon" hot pools — to suggest a room
-  for (let i = 0; i < 4; i++) {
-    const cx = (i / 4) * w + w / 8;
-    const cy = h * 0.58;
-    const r = w * 0.16;
-    const sp = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    sp.addColorStop(0, 'rgba(224,170,110,0.42)');
-    sp.addColorStop(0.4, 'rgba(160,100,60,0.18)');
+  // Distributed warm light pools across the horizon — suggests bar lights
+  const pools = [
+    { x: w * 0.08, y: h * 0.58, r: w * 0.16 },
+    { x: w * 0.28, y: h * 0.6, r: w * 0.14 },
+    { x: w * 0.5, y: h * 0.56, r: w * 0.2 },
+    { x: w * 0.72, y: h * 0.6, r: w * 0.14 },
+    { x: w * 0.92, y: h * 0.58, r: w * 0.16 },
+  ];
+  for (const p of pools) {
+    const sp = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+    sp.addColorStop(0, 'rgba(248,200,140,0.55)');
+    sp.addColorStop(0.35, 'rgba(190,130,70,0.28)');
     sp.addColorStop(1, 'transparent');
     ctx.fillStyle = sp;
-    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    ctx.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
   }
-  // Subtle teal blob at the back
+
+  // A teal accent band — back wall hint
   {
-    const sp = ctx.createRadialGradient(w * 0.5, h * 0.55, 0, w * 0.5, h * 0.55, w * 0.4);
-    sp.addColorStop(0, 'rgba(35,55,55,0.5)');
-    sp.addColorStop(1, 'transparent');
+    const sp = ctx.createLinearGradient(0, h * 0.42, 0, h * 0.58);
+    sp.addColorStop(0, 'rgba(28,48,48,0.0)');
+    sp.addColorStop(0.5, 'rgba(28,48,48,0.6)');
+    sp.addColorStop(1, 'rgba(28,48,48,0.0)');
     ctx.fillStyle = sp;
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillRect(0, h * 0.42, w, h * 0.16);
   }
 
-  // Centered title text
-  ctx.fillStyle = '#e8d4a8';
-  ctx.font = 'italic 220px "Cormorant Garamond", serif';
+  // Floor reflection band
+  {
+    const sp = ctx.createLinearGradient(0, h * 0.7, 0, h);
+    sp.addColorStop(0, 'rgba(40,28,18,0)');
+    sp.addColorStop(0.5, 'rgba(40,28,18,0.6)');
+    sp.addColorStop(1, 'rgba(15,10,8,0.9)');
+    ctx.fillStyle = sp;
+    ctx.fillRect(0, h * 0.7, w, h * 0.3);
+  }
+
+  // Title — cream serif, large
   ctx.textAlign = 'center';
-  ctx.fillText(title, w / 2, h / 2 - 80);
+  ctx.shadowColor = 'rgba(0,0,0,0.7)';
+  ctx.shadowBlur = 22;
+  ctx.fillStyle = '#f0e0bc';
+  ctx.font = 'italic 240px "Cormorant Garamond", serif';
+  ctx.fillText(title, w / 2, h / 2 - 50);
 
-  ctx.font = '300 64px "Inter", sans-serif';
-  ctx.fillStyle = '#c9c2b4';
-  ctx.fillText(subtitle, w / 2, h / 2 + 40);
+  ctx.shadowBlur = 14;
+  ctx.font = '300 62px "Inter", sans-serif';
+  ctx.fillStyle = '#d4b986';
+  ctx.fillText(subtitle, w / 2, h / 2 + 50);
 
-  ctx.font = '300 38px "Inter", sans-serif';
-  ctx.fillStyle = '#888477';
-  ctx.fillText('Awaiting AI panorama · /public/panoramas/', w / 2, h / 2 + 140);
+  ctx.shadowBlur = 10;
+  ctx.font = '300 42px "Inter", sans-serif';
+  ctx.fillStyle = '#9a8d78';
+  ctx.fillText('PLACEHOLDER · DROP YOUR AI PANORAMA INTO /public/panoramas/', w / 2, h / 2 + 150);
+  ctx.shadowBlur = 0;
 
-  // Tiny noise overlay for grain
-  for (let i = 0; i < 24000; i++) {
+  // Subtle film grain
+  for (let i = 0; i < 28000; i++) {
     const x = Math.random() * w;
     const y = Math.random() * h;
-    const a = Math.random() * 0.06;
-    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.fillStyle = `rgba(255,235,200,${Math.random() * 0.07})`;
     ctx.fillRect(x, y, 1.4, 1.4);
   }
 

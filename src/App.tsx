@@ -6,7 +6,7 @@ import { Brand } from './ui/Brand';
 
 export default function App() {
   return (
-    <main style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: '#080808' }}>
+    <main style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: '#0a0a0a' }}>
       <Scene />
       <div
         aria-hidden
@@ -16,7 +16,7 @@ export default function App() {
           pointerEvents: 'none',
           zIndex: 10,
           background:
-            'radial-gradient(ellipse 140% 110% at center, transparent 60%, rgba(0,0,0,0.22) 100%)',
+            'radial-gradient(ellipse 140% 110% at center, transparent 65%, rgba(0,0,0,0.18) 100%)',
         }}
       />
       <FilmGrain />

@@ -38,11 +38,11 @@ export function Scene() {
       }}
       onCreated={({ gl, scene }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.0;
+        gl.toneMappingExposure = 1.05;
         gl.outputColorSpace = THREE.SRGBColorSpace;
-        scene.background = new THREE.Color('#080808');
+        scene.background = new THREE.Color('#0a0a0a');
       }}
-      style={{ position: 'absolute', inset: 0, background: '#080808' }}
+      style={{ position: 'absolute', inset: 0, background: '#0a0a0a' }}
     >
       <PerspectiveCamera makeDefault position={[0, 0, 0]} fov={75} near={0.1} far={200} />
       <PanoramaSphere />
@@ -51,11 +51,11 @@ export function Scene() {
       <EffectComposer multisampling={4} enableNormalPass={false}>
         <SMAA />
         <Bloom
-          intensity={0.18}
-          luminanceThreshold={0.86}
-          luminanceSmoothing={0.25}
+          intensity={0.12}
+          luminanceThreshold={0.92}
+          luminanceSmoothing={0.22}
           mipmapBlur
-          radius={0.4}
+          radius={0.3}
         />
         <ChromaticAberration
           offset={chromaOffset}
@@ -63,8 +63,8 @@ export function Scene() {
           modulationOffset={0.5}
           blendFunction={BlendFunction.NORMAL}
         />
-        <BrightnessContrast brightness={0.0} contrast={0.04} />
-        <Vignette eskil={false} offset={0.28} darkness={0.35} />
+        <BrightnessContrast brightness={0.02} contrast={0.02} />
+        <Vignette eskil={false} offset={0.35} darkness={0.15} />
         <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       </EffectComposer>
     </Canvas>
