@@ -18,22 +18,8 @@ Usage:
   python3 blender/nocture_scene.py -- --camera counter_hero --res 1600x900 \
       --samples 96 --out /tmp/hero.jpg
 """
-import bpy, bmesh, math, sys, argparse, random, os
+import bpy, bmesh, math, sys, argparse, random
 from mathutils import Vector, Euler
-
-ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
-_img_cache = {}
-def load_image(fname, non_color=False):
-    """Load (and cache) a texture from blender/assets. Returns a bpy image."""
-    key = (fname, non_color)
-    if key in _img_cache:
-        return _img_cache[key]
-    img = bpy.data.images.load(os.path.join(ASSETS, fname), check_existing=True)
-    if non_color:
-        try: img.colorspace_settings.name = 'Non-Color'
-        except Exception: pass
-    _img_cache[key] = img
-    return img
 
 # ----------------------------------------------------------------------------- args
 argv = sys.argv
@@ -222,55 +208,32 @@ def make_green_tile(name):
     return mat
 
 def make_oak(name, tone=(150, 110, 70)):
-    """Real scanned hardwood (2K diffuse + bump + roughness) mapped with Box
-    projection so it works on every oak surface without UVs. `tone` tints the
-    scan so we can get lighter/darker oak variants from one texture set."""
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
-    nt = mat.node_tree; nt.nodes.clear()
+    nt = mat.node_tree
+    nt.nodes.clear()
     out = nt.nodes.new("ShaderNodeOutputMaterial")
     bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
     nt.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
-    set_in(bsdf, "Coat Weight", 0.12)
-    set_in(bsdf, "Coat Roughness", 0.3)
-
+    base = srgb(*tone)
+    set_in(bsdf, "Base Color", base)
+    set_in(bsdf, "Roughness", 0.42)
+    set_in(bsdf, "Coat Weight", 0.15)
     tex = nt.nodes.new("ShaderNodeTexCoord")
     mapping = nt.nodes.new("ShaderNodeMapping")
-    mapping.inputs["Scale"].default_value = (1.1, 1.1, 1.1)
+    mapping.inputs["Scale"].default_value = (2, 50, 2)  # long grain along Y
     nt.links.new(tex.outputs["Object"], mapping.inputs["Vector"])
-
-    # diffuse (box projection so planks read on any face orientation)
-    diff = nt.nodes.new("ShaderNodeTexImage")
-    diff.image = load_image("oak_diffuse.jpg")
-    diff.projection = 'BOX'; diff.projection_blend = 0.3
-    nt.links.new(mapping.outputs["Vector"], diff.inputs["Vector"])
-    # tint the scan toward the requested tone
-    tint = nt.nodes.new("ShaderNodeMixRGB")
-    tint.blend_type = 'MULTIPLY'; tint.inputs["Fac"].default_value = 0.6
-    tint.inputs["Color2"].default_value = srgb(*tone)
-    nt.links.new(diff.outputs["Color"], tint.inputs["Color1"])
-    nt.links.new(tint.outputs["Color"], bsdf.inputs["Base Color"])
-
-    # roughness map
-    rough = nt.nodes.new("ShaderNodeTexImage")
-    rough.image = load_image("oak_rough.jpg", non_color=True)
-    rough.projection = 'BOX'; rough.projection_blend = 0.3
-    nt.links.new(mapping.outputs["Vector"], rough.inputs["Vector"])
-    rmap = nt.nodes.new("ShaderNodeMapRange")
-    rmap.inputs["To Min"].default_value = 0.35
-    rmap.inputs["To Max"].default_value = 0.62
-    nt.links.new(rough.outputs["Color"], rmap.inputs["Value"])
-    nt.links.new(rmap.outputs["Result"], bsdf.inputs["Roughness"])
-
-    # bump map
-    bumpimg = nt.nodes.new("ShaderNodeTexImage")
-    bumpimg.image = load_image("oak_bump.jpg", non_color=True)
-    bumpimg.projection = 'BOX'; bumpimg.projection_blend = 0.3
-    nt.links.new(mapping.outputs["Vector"], bumpimg.inputs["Vector"])
-    bump = nt.nodes.new("ShaderNodeBump")
-    bump.inputs["Strength"].default_value = 0.35
-    nt.links.new(bumpimg.outputs["Color"], bump.inputs["Height"])
-    nt.links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+    wave = nt.nodes.new("ShaderNodeTexWave")
+    wave.wave_type = 'BANDS'
+    wave.inputs["Scale"].default_value = 2.0
+    wave.inputs["Distortion"].default_value = 6.0
+    wave.inputs["Detail"].default_value = 3.0
+    nt.links.new(mapping.outputs["Vector"], wave.inputs["Vector"])
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].color = srgb(int(tone[0]*0.7), int(tone[1]*0.66), int(tone[2]*0.6))
+    ramp.color_ramp.elements[1].color = base
+    nt.links.new(wave.outputs["Fac"], ramp.inputs["Fac"])
+    nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
     return mat
 
 def make_art(name):
@@ -768,25 +731,9 @@ def build_speaker_wall():
 def setup_world():
     world = bpy.data.worlds.new("W"); bpy.context.scene.world = world
     world.use_nodes = True
-    nt = world.node_tree; nt.nodes.clear()
-    out = nt.nodes.new("ShaderNodeOutputWorld")
-    bg = nt.nodes.new("ShaderNodeBackground")
-    nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
-    # Real HDRI for image-based reflections — kept very dim so it only breaks up
-    # the highlights on chrome/brass/glass/terrazzo, never floods the dark room.
-    env = nt.nodes.new("ShaderNodeTexEnvironment")
-    env.image = load_image("env_quarry_1k.hdr")
-    # warm it down + dim it
-    mapping = nt.nodes.new("ShaderNodeMapping")
-    texc = nt.nodes.new("ShaderNodeTexCoord")
-    nt.links.new(texc.outputs["Generated"], mapping.inputs["Vector"])
-    nt.links.new(mapping.outputs["Vector"], env.inputs["Vector"])
-    tint = nt.nodes.new("ShaderNodeMixRGB")
-    tint.blend_type = 'MULTIPLY'; tint.inputs["Fac"].default_value = 0.85
-    tint.inputs["Color2"].default_value = srgb(70, 56, 40)
-    nt.links.new(env.outputs["Color"], tint.inputs["Color1"])
-    nt.links.new(tint.outputs["Color"], bg.inputs["Color"])
-    bg.inputs["Strength"].default_value = 0.10
+    bg = world.node_tree.nodes["Background"]
+    bg.inputs["Color"].default_value = srgb(26, 24, 24)
+    bg.inputs["Strength"].default_value = 0.14
 
 def add_atmosphere():
     """A very faint warm volumetric haze in a box that envelops the room. Gives
