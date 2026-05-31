@@ -82,10 +82,11 @@ def emission_mat(name, color, strength):
     return mat
 
 def box(name, size, loc, mat=None, rot=(0, 0, 0)):
+    # primitive_cube_add(size=1) already spans 1 unit, so scale by the full size
     bpy.ops.mesh.primitive_cube_add(size=1, location=loc)
     o = bpy.context.active_object
     o.name = name
-    o.scale = (size[0] / 2, size[1] / 2, size[2] / 2)
+    o.scale = (size[0], size[1], size[2])
     o.rotation_euler = Euler(rot)
     if mat:
         o.data.materials.append(mat)
@@ -115,40 +116,40 @@ def make_terrazzo(name, base_rgb, light=False):
     out = nt.nodes.new("ShaderNodeOutputMaterial")
     bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
     nt.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
-    set_in(bsdf, "Base Color", base_rgb)
-    set_in(bsdf, "Roughness", 0.34)
-    set_in(bsdf, "Coat Weight", 0.25)
-    set_in(bsdf, "Coat Roughness", 0.18)
+    set_in(bsdf, "Roughness", 0.4)
+    set_in(bsdf, "Coat Weight", 0.18)
+    set_in(bsdf, "Coat Roughness", 0.22)
 
     tex = nt.nodes.new("ShaderNodeTexCoord")
     mapping = nt.nodes.new("ShaderNodeMapping")
-    mapping.inputs["Scale"].default_value = (8, 8, 8)
+    mapping.inputs["Scale"].default_value = (6, 6, 6)
     nt.links.new(tex.outputs["Object"], mapping.inputs["Vector"])
 
-    # Voronoi chips
+    # Voronoi "Color" gives a flat random colour per cell — ramp most cells to the
+    # dark base and only a few to light chips. (Distance thresholding was unreliable.)
     vor = nt.nodes.new("ShaderNodeTexVoronoi")
     vor.feature = 'F1'
-    vor.inputs["Scale"].default_value = 26.0
+    vor.inputs["Scale"].default_value = 40.0
     nt.links.new(mapping.outputs["Vector"], vor.inputs["Vector"])
+    # use the per-cell random scalar to pick chip vs base
+    sep = nt.nodes.new("ShaderNodeSeparateColor")
+    nt.links.new(vor.outputs["Color"], sep.inputs["Color"])
     ramp = nt.nodes.new("ShaderNodeValToRGB")
-    ramp.color_ramp.elements[0].position = 0.0
-    ramp.color_ramp.elements[0].color = base_rgb
-    ramp.color_ramp.elements[1].position = 0.06
-    ramp.color_ramp.elements[1].color = srgb(150, 146, 140) if not light else srgb(210, 206, 198)
-    nt.links.new(vor.outputs["Distance"], ramp.inputs["Fac"])
-    # Mix chips over base
-    mix = nt.nodes.new("ShaderNodeMixRGB")
-    mix.blend_type = 'MIX'
-    mix.inputs["Fac"].default_value = 0.55
-    mix.inputs["Color1"].default_value = base_rgb
-    nt.links.new(ramp.outputs["Color"], mix.inputs["Color2"])
-    nt.links.new(mix.outputs["Color"], bsdf.inputs["Base Color"])
+    ramp.color_ramp.interpolation = 'CONSTANT'
+    # 0..0.7 -> dark base ; 0.7..0.88 -> mid chip ; 0.88..1 -> light chip
+    e = ramp.color_ramp.elements
+    e[0].position = 0.0;  e[0].color = base_rgb
+    e[1].position = 0.72; e[1].color = srgb(96, 92, 86)
+    ramp.color_ramp.elements.new(0.88);
+    ramp.color_ramp.elements[2].color = srgb(170, 165, 156) if not light else srgb(220, 216, 208)
+    nt.links.new(sep.outputs["Red"], ramp.inputs["Fac"])
+    nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
     # subtle bump
     noise = nt.nodes.new("ShaderNodeTexNoise")
-    noise.inputs["Scale"].default_value = 220.0
+    noise.inputs["Scale"].default_value = 180.0
     nt.links.new(mapping.outputs["Vector"], noise.inputs["Vector"])
     bump = nt.nodes.new("ShaderNodeBump")
-    bump.inputs["Strength"].default_value = 0.05
+    bump.inputs["Strength"].default_value = 0.04
     nt.links.new(noise.outputs["Fac"], bump.inputs["Height"])
     nt.links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
     return mat
@@ -226,12 +227,14 @@ M = {}
 
 def make_materials():
     M['floor']   = make_terrazzo("Terrazzo_Floor", srgb(20, 19, 18))
-    M['counter'] = make_terrazzo("Terrazzo_Top",  srgb(38, 36, 34))
+    M["counter"] = make_terrazzo("Terrazzo_Top",  srgb(20, 19, 18))
     M['tile']    = make_green_tile("GreenTile")
     M['oak']     = make_oak("Oak", (150, 112, 72))
     M['oak_dark']= make_oak("OakDark", (96, 70, 46))
     M['black_matte'] = principled("BlackMatte", srgb(14,14,15), metallic=0.1, rough=0.55)
     M['black_satin'] = principled("BlackSatin", srgb(20,20,22), metallic=0.4, rough=0.32, coat=0.3)
+    # sleek appliance black — reads its form through soft highlights, not flat
+    M["black_deep"]  = principled("BlackDeep", srgb(15,15,17), metallic=0.0, rough=0.4, coat=0.0)
     M['chrome'] = principled("Chrome", srgb(232,232,235), metallic=1.0, rough=0.06)
     M['brass']  = principled("Brass", srgb(196,150,80), metallic=1.0, rough=0.18)
     M['steel']  = principled("Steel", srgb(180,180,184), metallic=1.0, rough=0.25)
@@ -244,6 +247,8 @@ def make_materials():
     M['led']    = emission_mat("LED2700", srgb(255, 196, 120), 22.0)
     M['led_soft']= emission_mat("LEDsoft", srgb(255, 188, 120), 9.0)
     M['lamp_hot']= emission_mat("LampHot", srgb(255, 210, 150), 60.0)
+    M['badge']   = emission_mat("Badge", srgb(255, 200, 130), 0.9)
+    M['screen_b']= emission_mat("ScreenB", srgb(120, 170, 255), 1.4)
     M['speaker_cone']= principled("Cone", srgb(180,176,168), rough=0.8)
 
 ROOM_W = 4.0
@@ -300,7 +305,7 @@ def build_cove_lights():
     # bar toe-kick glow (floor wash along bar base)
     box("ToeKick", (0.05, 3.6, 0.04), (2.62, 3.4, 0.06), M['led'])
     ld2 = bpy.data.lights.new("ToeArea", type='AREA')
-    ld2.shape='RECTANGLE'; ld2.size=0.1; ld2.size_y=3.6; ld2.energy=42; ld2.color=(1.0,0.72,0.45)
+    ld2.shape='RECTANGLE'; ld2.size=0.1; ld2.size_y=3.6; ld2.energy=22; ld2.color=(1.0,0.72,0.45)
     lo2 = bpy.data.objects.new("ToeArea", ld2); lo2.location=(2.5, 3.4, 0.08)
     lo2.rotation_euler=(0, math.radians(-80), 0); bpy.context.scene.collection.objects.link(lo2)
 
@@ -323,7 +328,7 @@ def build_bar():
     # under-shelf LED
     box("ShelfLED", (0.2, length-0.3, 0.025), (sx-0.02, cy, 1.80), M['led'])
     ld = bpy.data.lights.new("ShelfArea", type='AREA')
-    ld.shape='RECTANGLE'; ld.size=0.18; ld.size_y=length-0.3; ld.energy=70; ld.color=(1.0,0.76,0.5)
+    ld.shape='RECTANGLE'; ld.size=0.18; ld.size_y=length-0.3; ld.energy=46; ld.color=(1.0,0.76,0.5)
     lo = bpy.data.objects.new("ShelfArea", ld); lo.location=(sx-0.1, cy, 1.74)
     lo.rotation_euler=(0, math.radians(95), 0); bpy.context.scene.collection.objects.link(lo)
     # coffee jars on the shelf
@@ -334,55 +339,119 @@ def build_bar():
         cyl(f"JarBeans{i}", 0.062, 0.14, (sx, y, 1.94), M['beans'])
         cyl(f"JarLid{i}", 0.072, 0.03, (sx, y, 2.10), M['oak_dark'])
 
-    # espresso machine (La Marzocco-style) centered on bar
-    build_espresso((cx-0.05, 3.0, 1.07))
+    # espresso machine (La Marzocco Strada-style) centered on bar
+    build_espresso((cx-0.02, 3.05, 1.065))
     # grinder to its right
-    build_grinder((cx-0.02, 3.9, 1.07))
+    build_grinder((cx+0.0, 3.95, 1.065))
     # brass gooseneck tap + sink toward the front
-    build_tap((cx+0.02, 2.0, 1.07))
-    # a few cups stacked
-    for i in range(4):
-        cyl(f"Cup{i}", 0.04, 0.05, (cx-0.18, 4.5, 1.075+ i*0.052), M['black_satin'], verts=32)
+    build_tap((cx+0.08, 2.0, 1.065))
+    # lived-in props
+    build_bar_props(cx, cy)
+    # Lighting on the espresso area is carried by the existing track spots and
+    # under-shelf strip — no dedicated key/rim, which were washing the machine
+    # to cream regardless of base colour.
 
 def build_espresso(loc):
+    """La Marzocco Strada EP, 2-group, paddle-actuated. Front faces -X (walkway)."""
     x, y, z = loc
-    body = box("EspBody", (0.5, 0.62, 0.45), (x, y, z+0.225), M['black_satin'])
-    # top dome
-    top = box("EspTop", (0.5, 0.5, 0.12), (x, y, z+0.5), M['black_satin'])
-    # back panel (dark, not mirror steel — it was glowing)
-    box("EspBack", (0.5, 0.04, 0.4), (x, y+0.3, z+0.24), M['black_satin'])
-    # two group heads facing the walkway (-X)
-    for i, gy in enumerate([y-0.16, y+0.16]):
-        cyl(f"Grp{i}", 0.05, 0.12, (x-0.27, gy, z+0.16), M['chrome'], rot=(0, math.radians(90), 0))
-        # portafilter handle
-        cyl(f"PF{i}", 0.018, 0.16, (x-0.36, gy, z+0.14), M['black_matte'], rot=(0, math.radians(70), 0))
-        cyl(f"PFcup{i}", 0.035, 0.04, (x-0.31, gy, z+0.14), M['chrome'], rot=(0, math.radians(90),0))
-    # paddles / knobs
-    for gy in [y-0.16, y+0.16, y]:
-        cyl("Knob", 0.018, 0.04, (x-0.22, gy, z+0.33), M['chrome'], rot=(0,math.radians(90),0))
-    # steam wands
-    for gy in [y-0.28, y+0.28]:
-        cyl("Wand", 0.01, 0.22, (x-0.24, gy, z+0.1), M['chrome'], rot=(math.radians(20),0,0))
-    # branding strip (warm lit)
-    box("EspBadge", (0.02, 0.3, 0.05), (x-0.255, y, z+0.42), M['led_soft'])
+    BW = 0.78   # width along Y (bar length)
+    BD = 0.52   # depth along X
+    # main body — deep matte black, raised off a dark base tray
+    box("EspTray", (BD+0.04, BW+0.04, 0.03), (x, y, z+0.015), M['black_matte'])
+    body = box("EspBody", (BD, BW, 0.34), (x, y, z+0.21), M['black_deep'])
+    # rounded shoulder / top
+    box("EspShoulder", (BD-0.06, BW, 0.10), (x, y, z+0.42), M['black_deep'])
+    # raised rear cup rail
+    box("EspRear", (0.16, BW, 0.16), (x+0.18, y, z+0.50), M['black_deep'])
+    # polished front fascia panel (no emission — keeps the body reading black)
+    box("EspFascia", (0.02, BW-0.06, 0.2), (x-BD/2-0.005, y, z+0.20), M['black_deep'])
+
+    # two group heads protruding toward -X, with portafilters locked in
+    for i, gy in enumerate([y-0.17, y+0.17]):
+        # group neck
+        cyl(f"Grp{i}", 0.052, 0.16, (x-BD/2-0.04, gy, z+0.14), M['chrome'], rot=(0, math.radians(90), 0))
+        cyl(f"GrpTop{i}", 0.06, 0.05, (x-BD/2+0.02, gy, z+0.14), M['black_satin'], rot=(0, math.radians(90), 0))
+        # portafilter: chrome basket + black handle angled down-forward
+        cyl(f"PFbasket{i}", 0.044, 0.05, (x-BD/2-0.10, gy, z+0.115), M['chrome'], rot=(0, math.radians(90), 0))
+        cyl(f"PFspout{i}", 0.012, 0.04, (x-BD/2-0.10, gy, z+0.075), M['chrome'])
+        cyl(f"PFhandle{i}", 0.016, 0.17, (x-BD/2-0.24, gy, z+0.075), M['black_matte'], rot=(0, math.radians(64), 0))
+        cyl(f"PFhandleEnd{i}", 0.02, 0.03, (x-BD/2-0.32, gy, z+0.04), M['steel'], rot=(0, math.radians(64), 0))
+        # paddle lever above each group (Strada paddle)
+        box(f"Paddle{i}", (0.10, 0.05, 0.018), (x-0.05, gy, z+0.40), M['steel'], rot=(0, math.radians(12), 0))
+        # group pressure detail ring
+        cyl(f"GrpRing{i}", 0.058, 0.01, (x-BD/2-0.005, gy, z+0.14), M['brass'], rot=(0, math.radians(90), 0))
+    # central pressure gauge on top
+    cyl("Gauge", 0.045, 0.03, (x, y, z+0.48), M['steel'])
+    cyl("GaugeFace", 0.038, 0.005, (x, y, z+0.497), M['chrome'])
+    # steam wands on both ends + a knob each
+    for sy, s in ((y-BW/2-0.02, -1), (y+BW/2+0.02, 1)):
+        cyl("Wand", 0.009, 0.26, (x-0.18, sy, z+0.12), M['chrome'], rot=(math.radians(22*s), 0, 0))
+        cyl("WandTip", 0.012, 0.04, (x-0.18, sy+0.10*s, z+0.02), M['steel'], rot=(math.radians(22*s),0,0))
+        cyl("SteamKnob", 0.022, 0.03, (x+0.05, sy, z+0.30), M['black_matte'], rot=(0, math.radians(90), 0))
+    # tiny warm LM badge slot — just a hint, not a glowing panel
+    box("EspBadge", (0.008, 0.06, 0.014), (x-BD/2-0.012, y, z+0.30), M["badge"])
+    # cups warming on the top rail
+    for j, cy2 in enumerate([y-0.22, y-0.07, y+0.08, y+0.23]):
+        cyl(f"WarmCup{j}", 0.036, 0.045, (x+0.12, cy2, z+0.585), M['black_satin'], verts=32)
 
 def build_grinder(loc):
+    """Tall on-demand grinder (Mythos/Mazzer-style), front faces -X."""
     x, y, z = loc
-    box("GrBase", (0.18, 0.2, 0.12), (x, y, z+0.06), M['black_satin'])
-    body = cyl("GrBody", 0.085, 0.34, (x, y, z+0.28), M['black_satin'])
-    # clear hopper with beans
-    hop = cyl("GrHopper", 0.07, 0.2, (x, y, z+0.55), M['glass']); shade_smooth(hop)
-    cyl("GrBeans", 0.062, 0.13, (x, y, z+0.52), M['beans'])
-    cyl("GrChute", 0.03, 0.08, (x-0.09, y, z+0.2), M['black_matte'], rot=(0,math.radians(90),0))
+    box("GrBase", (0.2, 0.22, 0.1), (x, y, z+0.05), M['black_deep'])
+    body = box("GrBody", (0.17, 0.18, 0.42), (x, y, z+0.30), M['black_deep'])
+    # forks where the portafilter rests
+    box("GrFork", (0.06, 0.12, 0.012), (x-0.10, y, z+0.20), M['steel'])
+    # chute throat
+    cyl("GrChute", 0.028, 0.07, (x-0.085, y, z+0.27), M['black_matte'], rot=(0, math.radians(90), 0))
+    # display screen (blue glow)
+    box("GrScreen", (0.012, 0.10, 0.05), (x-0.086, y, z+0.40), M['black_matte'])
+    scr = emission_mat("GrScreenGlow", srgb(120, 170, 255), 0.7)
+    box("GrScreenGlow", (0.006, 0.085, 0.038), (x-0.092, y, z+0.40), scr)
+    # collar + clear hopper with beans
+    cyl("GrCollar", 0.085, 0.05, (x, y, z+0.55), M['black_deep'])
+    hop = cyl("GrHopper", 0.075, 0.22, (x, y, z+0.69), M['glass'], verts=48); shade_smooth(hop)
+    cyl("GrBeans", 0.066, 0.14, (x, y, z+0.66), M['beans'])
+    cyl("GrLid", 0.078, 0.025, (x, y, z+0.81), M['black_satin'])
 
 def build_tap(loc):
+    """Brass gooseneck tap over a small recessed sink. Smooth arc via segments."""
     x, y, z = loc
-    # gooseneck: vertical + arc (approx with a couple cylinders)
-    cyl("TapStem", 0.018, 0.22, (x, y, z+0.11), M['brass'])
-    cyl("TapArm", 0.016, 0.16, (x-0.06, y, z+0.22), M['brass'], rot=(0, math.radians(60), 0))
-    cyl("TapSpout", 0.012, 0.08, (x-0.12, y, z+0.18), M['brass'], rot=(math.radians(20),0,0))
-    # small recessed sink (dark)
-    box("Sink", (0.26, 0.34, 0.02), (x-0.02, y, z+0.005), M['steel'])
+    cyl("TapBase", 0.03, 0.02, (x, y, z+0.01), M['brass'])
+    cyl("TapStem", 0.016, 0.30, (x, y, z+0.16), M['brass'])
+    # gooseneck arc (quarter turn from vertical to pointing -X)
+    seg = 7
+    R = 0.10
+    for i in range(seg):
+        a0 = (math.pi/2) * (i / seg)
+        ax = x - R*(1-math.cos(a0))
+        az = z + 0.31 + R*math.sin(a0)
+        cyl(f"TapArc{i}", 0.014, 0.05, (ax, y, az), M['brass'], rot=(0, a0, 0))
+    cyl("TapSpout", 0.012, 0.06, (x-R-0.02, y, z+0.30), M['brass'], rot=(0, math.radians(90), 0))
+    # lever handle
+    cyl("TapLever", 0.01, 0.09, (x+0.03, y, z+0.20), M['brass'], rot=(0, math.radians(55), 0))
+    # recessed sink basin (dark steel)
+    box("SinkRim", (0.3, 0.4, 0.015), (x-0.04, y, z+0.005), M['steel'])
+    box("SinkWell", (0.24, 0.34, 0.02), (x-0.04, y, z-0.02), M['black_matte'])
+
+def build_bar_props(cx, cy):
+    """Small lived-in details on the counter near the front working area."""
+    z = 1.09
+    # a portafilter resting on a knock-tube near the espresso machine
+    cyl("KnockTube", 0.06, 0.16, (cx-0.05, 2.55, z+0.08), M['black_matte'])
+    cyl("KnockBar", 0.008, 0.12, (cx-0.05, 2.55, z+0.17), M['black_matte'], rot=(math.radians(90),0,0))
+    # tamper on a mat
+    box("TampMat", (0.18, 0.14, 0.008), (cx-0.02, 4.45, z+0.004), M['black_matte'])
+    cyl("TampBase", 0.029, 0.018, (cx-0.02, 4.45, z+0.02), M['steel'])
+    cyl("TampHandle", 0.022, 0.06, (cx-0.02, 4.45, z+0.05), M['oak_dark'])
+    # milk pitcher (stainless)
+    cyl("Pitcher", 0.05, 0.12, (cx-0.1, 4.7, z+0.06), M['steel'], verts=32)
+    box("PitcherSpout", (0.03, 0.04, 0.03), (cx-0.16, 4.7, z+0.10), M['steel'], rot=(0, math.radians(30), 0))
+    # a couple of finished espresso cups + saucers on the front of the bar
+    for i, yy in enumerate([1.7, 1.95]):
+        cyl(f"Saucer{i}", 0.05, 0.008, (cx-0.16, yy, z+0.004), M['black_satin'], verts=40)
+        cyl(f"DemiCup{i}", 0.032, 0.04, (cx-0.16, yy, z+0.025), M['black_satin'], verts=32)
+    # paper menu card
+    box("Menu", (0.1, 0.16, 0.004), (cx-0.18, 5.2, z+0.002), M['oak'], rot=(0,0,math.radians(18)))
 
 # ----------------------------------------------------------------------------- seating (left)
 def build_seating():
@@ -465,7 +534,7 @@ def setup_world():
     world.use_nodes = True
     bg = world.node_tree.nodes["Background"]
     bg.inputs["Color"].default_value = srgb(26, 24, 24)
-    bg.inputs["Strength"].default_value = 0.32
+    bg.inputs["Strength"].default_value = 0.14
 
 def setup_render():
     sc = bpy.context.scene
@@ -490,14 +559,14 @@ def setup_render():
         sc.view_settings.look = 'AgX - Medium High Contrast'
     except Exception:
         sc.view_settings.view_transform = 'Filmic'
-    sc.view_settings.exposure = 0.55
+    sc.view_settings.exposure = 0.0
     sc.view_settings.gamma = 1.0
 
 CAMERAS = {
     # name: (location, look_at, focal_mm)
-    'counter_hero': ((1.9, 0.35, 1.5), (2.75, 7.0, 1.05), 26),
+    'counter_hero': ((1.6, 0.6, 1.5), (3.0, 4.5, 1.1), 24),
     'entrance':     ((2.0, 0.7, 1.55), (2.2, 5.5, 1.2), 24),
-    'equipment':    ((2.1, 2.2, 1.35), (3.2, 3.2, 1.1), 42),
+    'equipment':    ((1.95, 1.75, 1.42), (3.05, 3.15, 1.12), 40),
     'brew_lab':     ((2.0, 4.6, 1.4), (3.3, 3.6, 1.05), 38),
     'seating':      ((2.6, 4.5, 1.45), (0.6, 2.5, 1.0), 30),
     'audiophile':   ((2.0, 3.0, 1.5), (2.0, 7.0, 1.3), 35),
