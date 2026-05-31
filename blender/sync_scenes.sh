@@ -19,7 +19,7 @@ declare -A MAP=(
 
 for cam in "${!MAP[@]}"; do
   src=""
-  for ver in v4 v3 v2 v1; do
+  for ver in v5 v4 v3 v2 v1; do
     cand="$ROOT/blender/out/$ver/$cam.jpg"
     [ -f "$cand" ] && { src="$cand"; break; }
   done
