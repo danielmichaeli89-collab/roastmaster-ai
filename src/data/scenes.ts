@@ -199,13 +199,20 @@ export type LightingMode =
   | 'listening'
   | 'private_event';
 
-export const LIGHTING_MODES: { id: LightingMode; label: string; icon: string }[] = [
-  { id: 'morning',       label: 'Morning',       icon: '☀' },
-  { id: 'service',       label: 'Service',       icon: '✦' },
-  { id: 'golden_hour',   label: 'Golden Hour',   icon: '✺' },
-  { id: 'night',         label: 'Night',         icon: '☾' },
-  { id: 'listening',     label: 'Listening Mode',icon: '♪' },
-  { id: 'private_event', label: 'Private Event', icon: '✧' },
+export const LIGHTING_MODES: {
+  id: LightingMode;
+  label: string;
+  icon: string;
+  /** CSS filter applied to the hero as a live preview grade (until per-mode
+   *  Cycles re-renders exist). Tuned to read like the named lighting state. */
+  grade: string;
+}[] = [
+  { id: 'morning',       label: 'Morning',       icon: '☀', grade: 'brightness(1.18) contrast(0.95) saturate(0.92) hue-rotate(-6deg) sepia(0.05)' },
+  { id: 'service',       label: 'Service',       icon: '✦', grade: 'none' },
+  { id: 'golden_hour',   label: 'Golden Hour',   icon: '✺', grade: 'brightness(1.06) contrast(1.05) saturate(1.15) sepia(0.18) hue-rotate(-8deg)' },
+  { id: 'night',         label: 'Night',         icon: '☾', grade: 'brightness(0.74) contrast(1.12) saturate(0.9) hue-rotate(6deg)' },
+  { id: 'listening',     label: 'Listening Mode',icon: '♪', grade: 'brightness(0.6) contrast(1.2) saturate(0.85)' },
+  { id: 'private_event', label: 'Private Event', icon: '✧', grade: 'brightness(0.82) contrast(1.1) saturate(1.2) sepia(0.12)' },
 ];
 
 export const MATERIAL_PALETTE = [

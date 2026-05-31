@@ -32,7 +32,7 @@ export function StudioViewer() {
 
       <main className="grid">
         <LeftRail scene={scene} onPickScene={setActiveId} />
-        <Stage scene={scene} />
+        <Stage scene={scene} lighting={lighting} intensity={intensity} />
         <RightRail
           scene={scene}
           inspector={inspector}
@@ -153,8 +153,12 @@ function Floorplan({ activeId, onPick }: { activeId: SceneId; onPick: (id: Scene
 }
 
 // ----------------------------------------------------------------------------- Stage
-function Stage({ scene }: { scene: Scene }) {
+function Stage({ scene, lighting, intensity }: { scene: Scene; lighting: LightingMode; intensity: number }) {
   const frameRef = useRef<HTMLDivElement>(null);
+  const mode = LIGHTING_MODES.find((m) => m.id === lighting) ?? LIGHTING_MODES[1];
+  // blend the mode grade with the intensity dial (lower intensity = dimmer)
+  const dim = 0.6 + (intensity / 100) * 0.55;
+  const grade = `${mode.grade === 'none' ? '' : mode.grade} brightness(${dim.toFixed(2)})`;
   const [imgOk, setImgOk] = useState(true);
   // pan: -1..1 across the over-scanned hero; zoom: 1..2
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -203,7 +207,7 @@ function Stage({ scene }: { scene: Scene }) {
             alt={scene.title}
             className="hero-img"
             draggable={false}
-            style={{ transform: `scale(${zoom}) translate(${tx}px, ${ty}px)` }}
+            style={{ transform: `scale(${zoom}) translate(${tx}px, ${ty}px)`, filter: grade }}
             onError={() => setImgOk(false)}
           />
         ) : (
