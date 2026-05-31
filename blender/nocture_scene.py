@@ -666,18 +666,33 @@ def build_speaker_wall():
     box("SpkBaffle", (1.05, 0.10, 2.2), (cx, y, 1.25), M['black_matte'])
     # green felt acoustic backing visible at edges
     box("SpkFelt", (0.85, 0.04, 2.05), (cx, y-0.03, 1.25), M['felt_green'])
-    # drivers — 4 woofers stacked + horn tweeter at the very top
+    # drivers — 4 woofers stacked + horn tweeter at the very top.
+    # Built with real depth: chrome trim ring, dark rubber surround, a recessed
+    # CONE (not a flat disc), and a small dust cap — so they read as drivers,
+    # not bullseyes.
     z_woofers = [0.55, 1.05, 1.55, 2.05]
     for i, zz in enumerate(z_woofers):
         r = 0.20
-        # recessed mounting ring (slightly proud black)
-        cyl(f"DrvRing{i}", r+0.018, 0.018, (cx, y-0.06, zz), M['black_matte'], rot=(math.radians(90),0,0))
-        # surround / basket
-        cyl(f"DrvBasket{i}", r, 0.05, (cx, y-0.07, zz), M['black_satin'], rot=(math.radians(90),0,0))
-        # the paper cone (slightly off-white)
-        cyl(f"DrvCone{i}", r*0.78, 0.022, (cx, y-0.10, zz), M['speaker_cone'], rot=(math.radians(90),0,0))
-        # dust cap
-        cyl(f"DrvCap{i}", r*0.30, 0.038, (cx, y-0.12, zz), M['black_matte'], rot=(math.radians(90),0,0))
+        # outer trim ring (thin, slightly metallic)
+        cyl(f"DrvTrim{i}", r+0.02, 0.012, (cx, y-0.055, zz), M['black_satin'], rot=(math.radians(90),0,0))
+        # basket / frame
+        cyl(f"DrvBasket{i}", r, 0.06, (cx, y-0.075, zz), M['black_matte'], rot=(math.radians(90),0,0))
+        # rubber roll surround (dark torus around the cone edge)
+        t = cyl(f"DrvSurround{i}", 0, 0, (cx, y-0.085, zz))  # placeholder removed below
+        bpy.data.objects.remove(t, do_unlink=True)
+        bpy.ops.mesh.primitive_torus_add(location=(cx, y-0.085, zz),
+            major_radius=r*0.82, minor_radius=r*0.07, rotation=(math.radians(90),0,0))
+        sur = bpy.context.active_object; sur.name=f"DrvSurround{i}"
+        sur.data.materials.append(M['black_satin']); shade_smooth(sur)
+        # recessed paper cone — a shallow cone pointing INTO the cabinet (+Y)
+        bpy.ops.mesh.primitive_cone_add(radius1=r*0.78, radius2=r*0.12, depth=0.085,
+            location=(cx, y-0.055, zz), rotation=(math.radians(-90),0,0), vertices=48)
+        cone = bpy.context.active_object; cone.name=f"DrvCone{i}"
+        cone.data.materials.append(M['speaker_cone']); shade_smooth(cone)
+        # dust cap (small dome, body colour)
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=r*0.16, location=(cx, y-0.075, zz))
+        cap = bpy.context.active_object; cap.name=f"DrvCap{i}"
+        cap.scale=(1,0.5,1); cap.data.materials.append(M['black_satin']); shade_smooth(cap)
     # horn tweeter slot (above woofers)
     box("HornBody", (0.4, 0.05, 0.16), (cx, y-0.05, 2.6), M['black_matte'])
     box("HornMouth", (0.36, 0.02, 0.12), (cx, y-0.08, 2.6), M['black_satin'])
