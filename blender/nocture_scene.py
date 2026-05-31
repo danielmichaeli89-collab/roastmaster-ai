@@ -221,6 +221,43 @@ def make_green_tile(name):
     nt.links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
     return mat
 
+def make_oak_slat(name, tone=(150, 110, 70)):
+    """Procedural oak for VERTICAL battens — continuous grain running up the
+    slat (no plank joints). The scanned floor texture box-projects as a parquet
+    grid on tall thin battens, which looks wrong; this clean vertical grain is
+    the right read for slatted walls."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree; nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+    nt.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+    base = srgb(*tone)
+    set_in(bsdf, "Roughness", 0.45)
+    set_in(bsdf, "Coat Weight", 0.12)
+    set_in(bsdf, "Coat Roughness", 0.3)
+    tex = nt.nodes.new("ShaderNodeTexCoord")
+    mapping = nt.nodes.new("ShaderNodeMapping")
+    mapping.inputs["Scale"].default_value = (3, 3, 40)  # long grain along Z (vertical)
+    nt.links.new(tex.outputs["Object"], mapping.inputs["Vector"])
+    wave = nt.nodes.new("ShaderNodeTexWave")
+    wave.wave_type = 'BANDS'; wave.bands_direction = 'Z'
+    wave.inputs["Scale"].default_value = 1.4
+    wave.inputs["Distortion"].default_value = 7.0
+    wave.inputs["Detail"].default_value = 3.0
+    nt.links.new(mapping.outputs["Vector"], wave.inputs["Vector"])
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].color = srgb(int(tone[0]*0.62), int(tone[1]*0.58), int(tone[2]*0.52))
+    ramp.color_ramp.elements[1].color = base
+    nt.links.new(wave.outputs["Fac"], ramp.inputs["Fac"])
+    nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
+    # subtle grain bump
+    bump = nt.nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = 0.12
+    nt.links.new(wave.outputs["Fac"], bump.inputs["Height"])
+    nt.links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+    return mat
+
 def make_oak(name, tone=(150, 110, 70)):
     """Real scanned hardwood (2K diffuse + bump + roughness) mapped with Box
     projection so it works on every oak surface without UVs. `tone` tints the
@@ -348,6 +385,7 @@ def make_materials():
     M['tile']    = make_green_tile("GreenTile")
     M['oak']     = make_oak("Oak", (150, 112, 72))
     M['oak_dark']= make_oak("OakDark", (96, 70, 46))
+    M['oak_slat']= make_oak_slat("OakSlat", (150, 112, 72))  # vertical battens
     M['black_matte'] = principled("BlackMatte", srgb(14,14,15), metallic=0.1, rough=0.55)
     M['black_satin'] = principled("BlackSatin", srgb(20,20,22), metallic=0.4, rough=0.32, coat=0.3)
     # sleek appliance black — reads its form through soft highlights, not flat
@@ -615,7 +653,7 @@ def build_seating():
     n = 26
     for i in range(n):
         yy = 0.6 + i * ((ROOM_L-1.2)/(n-1))
-        box(f"Slat{i}", (0.04, 0.05, ROOM_H-1.1), (0.12, yy, (ROOM_H-1.1)/2+0.55), M['oak'])
+        box(f"Slat{i}", (0.04, 0.05, ROOM_H-1.1), (0.12, yy, (ROOM_H-1.1)/2+0.55), M['oak_slat'])
     # banquette bench
     box("Bench", (0.55, ROOM_L-2.0, 0.12), (0.5, ROOM_L/2-0.2, 0.46), M['oak_dark'])
     box("BenchCush", (0.5, ROOM_L-2.1, 0.08), (0.52, ROOM_L/2-0.2, 0.56), M['black_matte'])
@@ -737,7 +775,7 @@ def build_speaker_wall():
     # flanking oak slat columns (taller, narrower battens)
     for sx in [cx-0.78, cx+0.78]:
         for j in range(6):
-            box(f"SpkSlat{sx}{j}", (0.05, 0.06, 2.3), (sx + (j-2.5)*0.07, y-0.03, 1.3), M['oak'])
+            box(f"SpkSlat{sx}{j}", (0.05, 0.06, 2.3), (sx + (j-2.5)*0.07, y-0.03, 1.3), M['oak_slat'])
 
     # framed art either side of the speaker (vertical rectangles)
     for sx in [cx-1.55, cx+1.55]:
