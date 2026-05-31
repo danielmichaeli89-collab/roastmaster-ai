@@ -546,6 +546,24 @@ def build_bar_props(cx, cy):
     # paper menu card
     box("Menu", (0.1, 0.16, 0.004), (cx-0.18, 5.2, z+0.002), M['oak'], rot=(0,0,math.radians(18)))
 
+    # acaia-style barista scale (black pad + bright readout) under the grinder chute
+    box("Scale", (0.13, 0.13, 0.02), (cx-0.02, 3.95, z+0.01), M['black_satin'])
+    sgl = emission_mat("ScaleGlow", srgb(150, 200, 255), 1.1)
+    box("ScaleScreen", (0.05, 0.025, 0.001), (cx-0.06, 3.92, z+0.021), sgl)
+    # folded bar cloth draped near the steam wand
+    box("Cloth", (0.12, 0.16, 0.02), (cx-0.05, 2.85, z+0.01), M['felt_green'], rot=(0,0,math.radians(-10)))
+    # a scatter of coffee beans by the grinder
+    random.seed(21)
+    for i in range(14):
+        bx = cx - 0.02 + random.uniform(-0.14, 0.14)
+        by = 3.95 + random.uniform(-0.16, 0.16)
+        bn = cyl(f"Bean{i}", 0.006, 0.01, (bx, by, z+0.006),
+                 M['beans'], rot=(random.uniform(0,3), random.uniform(0,3), random.uniform(0,3)), verts=8, bevel=False)
+        bn.scale = (1.0, 1.5, 0.7)
+    # small stack of folded napkins
+    for i in range(4):
+        box(f"Napkin{i}", (0.1, 0.1, 0.006), (cx+0.05, 5.0, z+0.004 + i*0.007), M['oak'], rot=(0,0,math.radians(i*3)))
+
 # ----------------------------------------------------------------------------- seating (left)
 def build_seating():
     # oak slat wall on the left (vertical battens)
