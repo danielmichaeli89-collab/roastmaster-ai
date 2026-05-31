@@ -154,26 +154,63 @@ function Floorplan({ activeId, onPick }: { activeId: SceneId; onPick: (id: Scene
 
 // ----------------------------------------------------------------------------- Stage
 function Stage({ scene }: { scene: Scene }) {
-  const imgRef = useRef<HTMLImageElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const [imgOk, setImgOk] = useState(true);
-  useEffect(() => { setImgOk(true); }, [scene.id]);
+  // pan: -1..1 across the over-scanned hero; zoom: 1..2
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1.08);
+  const drag = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => { setImgOk(true); setPan({ x: 0, y: 0 }); setZoom(1.08); }, [scene.id]);
+
+  const onDown = (e: React.PointerEvent) => {
+    drag.current = { x: e.clientX, y: e.clientY };
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+  const onMove = (e: React.PointerEvent) => {
+    if (!drag.current) return;
+    const dx = (e.clientX - drag.current.x) / (frameRef.current?.clientWidth ?? 1);
+    const dy = (e.clientY - drag.current.y) / (frameRef.current?.clientHeight ?? 1);
+    drag.current = { x: e.clientX, y: e.clientY };
+    setPan((p) => ({
+      x: Math.max(-1, Math.min(1, p.x + dx * 2)),
+      y: Math.max(-1, Math.min(1, p.y + dy * 2)),
+    }));
+  };
+  const onUp = () => { drag.current = null; };
+  const onWheel = (e: React.WheelEvent) => {
+    setZoom((z) => Math.max(1, Math.min(2.2, z - e.deltaY * 0.0012)));
+  };
+
+  // translate pan into image offset; the extra zoom gives room to move
+  const tx = pan.x * (zoom - 1) * -38;
+  const ty = pan.y * (zoom - 1) * -32;
 
   return (
     <section className="stage">
-      <div className="stage-frame">
+      <div
+        className="stage-frame"
+        ref={frameRef}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerLeave={onUp}
+        onWheel={onWheel}
+      >
         {imgOk ? (
           <img
-            ref={imgRef}
             src={scene.hero}
             alt={scene.title}
             className="hero-img"
+            draggable={false}
+            style={{ transform: `scale(${zoom}) translate(${tx}px, ${ty}px)` }}
             onError={() => setImgOk(false)}
           />
         ) : (
           <Placeholder scene={scene} />
         )}
         {scene.hotspots.map((h, i) => (
-          <Hotspot key={i} h={h} />
+          <Hotspot key={i} h={h} pan={pan} zoom={zoom} />
         ))}
         <div className="hint">
           <span className="hint-icon">⌖</span>
@@ -187,12 +224,18 @@ function Stage({ scene }: { scene: Scene }) {
   );
 }
 
-function Hotspot({ h }: { h: HotspotT }) {
+function Hotspot({ h, pan, zoom }: { h: HotspotT; pan: { x: number; y: number }; zoom: number }) {
   const [open, setOpen] = useState(false);
+  // mirror the image transform so pins stay glued to features
+  const tx = pan.x * (zoom - 1) * -38;
+  const ty = pan.y * (zoom - 1) * -32;
+  const left = 50 + (h.x * 100 - 50) * zoom + tx;
+  const top = 50 + (h.y * 100 - 50) * zoom + ty;
   return (
     <button
       className={`hotspot ${open ? 'open' : ''}`}
-      style={{ left: `${h.x * 100}%`, top: `${h.y * 100}%` }}
+      style={{ left: `${left}%`, top: `${top}%` }}
+      onPointerDown={(e) => e.stopPropagation()}
       onClick={() => setOpen((v) => !v)}
     >
       <span className="hot-ring" />
