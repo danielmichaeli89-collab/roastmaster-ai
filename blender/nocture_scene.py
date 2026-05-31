@@ -30,6 +30,7 @@ ap.add_argument("--res", default="1600x900")
 ap.add_argument("--samples", type=int, default=96)
 ap.add_argument("--out", default="/tmp/hero.jpg")
 ap.add_argument("--pano", action="store_true")
+ap.add_argument("--haze", action="store_true", help="add volumetric atmosphere (slow; hero shots only)")
 args = ap.parse_args(argv)
 W, H = (int(x) for x in args.res.split("x"))
 random.seed(7)
@@ -235,6 +236,32 @@ def make_oak(name, tone=(150, 110, 70)):
     nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
     return mat
 
+def make_art(name):
+    """A dark, moody abstract for the framed prints — a noisy ink wash in muted
+    bronze/green so it reads as art, not a glowing oak panel."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree; nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+    nt.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+    set_in(bsdf, "Roughness", 0.85)
+    tex = nt.nodes.new("ShaderNodeTexCoord")
+    nz = nt.nodes.new("ShaderNodeTexNoise")
+    nz.inputs["Scale"].default_value = 3.5
+    nz.inputs["Detail"].default_value = 8.0
+    nz.inputs["Roughness"].default_value = 0.7
+    nt.links.new(tex.outputs["Object"], nz.inputs["Vector"])
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    el = ramp.color_ramp.elements
+    el[0].position = 0.30; el[0].color = srgb(14, 16, 14)
+    el[1].position = 0.62; el[1].color = srgb(58, 50, 34)
+    ramp.color_ramp.elements.new(0.85)
+    ramp.color_ramp.elements[2].color = srgb(120, 96, 56)
+    nt.links.new(nz.outputs["Fac"], ramp.inputs["Fac"])
+    nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
+    return mat
+
 def make_appliance_black(name):
     """A nuanced black for the espresso machine / grinder body. Mixes a soft
     matte base with a thin clearcoat that the Pointiness attribute drives —
@@ -303,6 +330,7 @@ def make_materials():
     M['badge']   = emission_mat("Badge", srgb(255, 200, 130), 0.9)
     M['screen_b']= emission_mat("ScreenB", srgb(120, 170, 255), 1.4)
     M['speaker_cone']= principled("Cone", srgb(180,176,168), rough=0.8)
+    M['art']     = make_art("Art")
 
 ROOM_W = 4.0
 ROOM_L = 7.0
@@ -412,8 +440,15 @@ def build_espresso(loc):
     # main body — deep matte black, raised off a dark base tray
     box("EspTray", (BD+0.04, BW+0.04, 0.03), (x, y, z+0.015), M['black_matte'])
     body = box("EspBody", (BD, BW, 0.34), (x, y, z+0.21), M['black_deep'])
+    # strong rounding on the body — LM Strada has soft 12mm radii, not hard edges
+    for m in list(body.modifiers):
+        body.modifiers.remove(m)
+    _add_bevel(body, width=0.014, segments=4)
     # rounded shoulder / top
-    box("EspShoulder", (BD-0.06, BW, 0.10), (x, y, z+0.42), M['black_deep'])
+    sh = box("EspShoulder", (BD-0.06, BW, 0.10), (x, y, z+0.42), M['black_deep'])
+    for m in list(sh.modifiers):
+        sh.modifiers.remove(m)
+    _add_bevel(sh, width=0.018, segments=4)
     # raised rear cup rail
     box("EspRear", (0.16, BW, 0.16), (x+0.18, y, z+0.50), M['black_deep'])
     # polished front fascia panel (no emission — keeps the body reading black)
@@ -594,9 +629,9 @@ def build_speaker_wall():
     # framed art either side of the speaker (vertical rectangles)
     for sx in [cx-1.55, cx+1.55]:
         # frame
-        box(f"ArtFrame_{sx}", (0.5, 0.025, 0.65), (sx, y-0.05, 1.45), M['oak_dark'])
+        box(f"ArtFrame_{sx}", (0.5, 0.025, 0.65), (sx, y-0.05, 1.45), M['black_satin'])
         # canvas (warm-coloured abstract)
-        box(f"ArtCanvas_{sx}", (0.44, 0.005, 0.58), (sx, y-0.07, 1.45), M['oak'])
+        box(f"ArtCanvas_{sx}", (0.44, 0.005, 0.58), (sx, y-0.07, 1.45), M['art'])
 
     # warm niche shelves on either side with bottles (lower band)
     for sx in [cx-1.55, cx+1.55]:
@@ -623,6 +658,28 @@ def setup_world():
     bg = world.node_tree.nodes["Background"]
     bg.inputs["Color"].default_value = srgb(26, 24, 24)
     bg.inputs["Strength"].default_value = 0.14
+
+def add_atmosphere():
+    """A very faint warm volumetric haze in a box that envelops the room. Gives
+    light beams body and adds aerial depth — the cinematic 'smoke' of the
+    reference. Density is deliberately tiny so it reads as air, not fog."""
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(ROOM_W/2, ROOM_L/2, ROOM_H/2))
+    o = bpy.context.active_object
+    o.name = "Atmosphere"
+    o.scale = (ROOM_W-0.1, ROOM_L-0.1, ROOM_H-0.1)
+    bpy.ops.object.transform_apply(scale=True)
+    mat = bpy.data.materials.new("Haze")
+    mat.use_nodes = True
+    nt = mat.node_tree; nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    vol = nt.nodes.new("ShaderNodeVolumeScatter")
+    vol.inputs["Color"].default_value = srgb(255, 224, 188)
+    vol.inputs["Density"].default_value = 0.004
+    vol.inputs["Anisotropy"].default_value = 0.4
+    nt.links.new(vol.outputs["Volume"], out.inputs["Volume"])
+    o.data.materials.append(mat)
+    # don't let the haze cube catch camera rays as a surface
+    o.visible_camera = True  # volume only (no surface shader) so this is fine
 
 def setup_render():
     sc = bpy.context.scene
@@ -696,6 +753,8 @@ def main():
     build_bar()
     build_seating()
     build_speaker_wall()
+    if args.haze:
+        add_atmosphere()
     place_camera()
     setup_render()
     print(f"[nocture] rendering {args.camera} {W}x{H} {args.samples}spp -> {args.out}")
