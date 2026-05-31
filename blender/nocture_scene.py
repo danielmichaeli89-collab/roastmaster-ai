@@ -336,6 +336,35 @@ def make_art(name):
     nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
     return mat
 
+def make_brushed_metal(name, base, rough=0.25):
+    """Anisotropic brushed metal — fine directional roughness streaks that catch
+    light the way real brushed brass/steel does, plus subtle roughness noise."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree; nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+    nt.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+    set_in(bsdf, "Base Color", base)
+    set_in(bsdf, "Metallic", 1.0)
+    set_in(bsdf, "Roughness", rough)
+    set_in(bsdf, "Anisotropic", 0.7)
+    # directional brush via a stretched noise driving roughness
+    tex = nt.nodes.new("ShaderNodeTexCoord")
+    mapping = nt.nodes.new("ShaderNodeMapping")
+    mapping.inputs["Scale"].default_value = (60, 2, 60)  # streaks along one axis
+    nt.links.new(tex.outputs["Object"], mapping.inputs["Vector"])
+    noise = nt.nodes.new("ShaderNodeTexNoise")
+    noise.inputs["Scale"].default_value = 12.0
+    noise.inputs["Detail"].default_value = 2.0
+    nt.links.new(mapping.outputs["Vector"], noise.inputs["Vector"])
+    rmap = nt.nodes.new("ShaderNodeMapRange")
+    rmap.inputs["To Min"].default_value = max(0.04, rough - 0.06)
+    rmap.inputs["To Max"].default_value = rough + 0.06
+    nt.links.new(noise.outputs["Fac"], rmap.inputs["Value"])
+    nt.links.new(rmap.outputs["Result"], bsdf.inputs["Roughness"])
+    return mat
+
 def make_appliance_black(name):
     """A nuanced black for the espresso machine / grinder body. Mixes a soft
     matte base with a thin clearcoat that the Pointiness attribute drives —
@@ -391,8 +420,8 @@ def make_materials():
     # sleek appliance black — reads its form through soft highlights, not flat
     M["black_deep"]  = make_appliance_black("BlackDeep")
     M['chrome'] = principled("Chrome", srgb(232,232,235), metallic=1.0, rough=0.06)
-    M['brass']  = principled("Brass", srgb(196,150,80), metallic=1.0, rough=0.18)
-    M['steel']  = principled("Steel", srgb(180,180,184), metallic=1.0, rough=0.25)
+    M['brass']  = make_brushed_metal("Brass", srgb(196,150,80), rough=0.22)
+    M['steel']  = make_brushed_metal("Steel", srgb(180,180,184), rough=0.28)
     M['glass']  = principled("Glass", srgb(250,250,250), rough=0.02, transmission=1.0, ior=1.45)
     M['beans']  = principled("Beans", srgb(40,22,12), rough=0.5)
     M['ceiling']= principled("Ceiling", srgb(16,15,15), rough=0.85)
@@ -873,6 +902,53 @@ def setup_render():
         sc.view_settings.view_transform = 'Filmic'
     sc.view_settings.exposure = 0.0
     sc.view_settings.gamma = 1.0
+    setup_compositor(sc)
+
+def setup_compositor(sc):
+    """Post: bloom/glare on the bright LEDs, a touch of lens distortion +
+    chromatic aberration, and a soft vignette — baked into the render for a
+    premium 'lens' look rather than flat raw output."""
+    sc.use_nodes = True
+    nt = sc.node_tree
+    nt.nodes.clear()
+    rl = nt.nodes.new("CompositorNodeRLayers")
+    comp = nt.nodes.new("CompositorNodeComposite")
+
+    # Subtle fog-glow bloom on the brightest emissives only (no gaudy streaks)
+    glare = nt.nodes.new("CompositorNodeGlare")
+    glare.glare_type = 'FOG_GLOW'
+    glare.quality = 'HIGH'
+    glare.threshold = 1.0      # only genuinely bright pixels bloom
+    glare.size = 6
+    try: glare.mix = -0.62     # mostly the original image, just a soft halo
+    except Exception: pass
+    nt.links.new(rl.outputs["Image"], glare.inputs["Image"])
+
+    # Lens distortion: a hair of chromatic dispersion at the edges
+    lens = nt.nodes.new("CompositorNodeLensdist")
+    try:
+        lens.inputs["Dispersion"].default_value = 0.004
+        lens.inputs["Distortion"].default_value = 0.003
+    except Exception: pass
+    nt.links.new(glare.outputs["Image"], lens.inputs["Image"])
+
+    # Vignette via an ellipse mask multiplied over the image
+    ellipse = nt.nodes.new("CompositorNodeEllipseMask")
+    ellipse.width = 0.92; ellipse.height = 0.92
+    blurv = nt.nodes.new("CompositorNodeBlur")
+    blurv.size_x = 220; blurv.size_y = 220
+    nt.links.new(ellipse.outputs["Mask"], blurv.inputs["Image"])
+    # remap vignette so edges only gently darken (0.78..1.0)
+    vigmap = nt.nodes.new("CompositorNodeMapRange")
+    vigmap.inputs["To Min"].default_value = 0.8
+    vigmap.inputs["To Max"].default_value = 1.0
+    nt.links.new(blurv.outputs["Image"], vigmap.inputs["Value"])
+    mul = nt.nodes.new("CompositorNodeMixRGB")
+    mul.blend_type = 'MULTIPLY'; mul.inputs["Fac"].default_value = 1.0
+    nt.links.new(lens.outputs["Image"], mul.inputs[1])
+    nt.links.new(vigmap.outputs["Value"], mul.inputs[2])
+
+    nt.links.new(mul.outputs["Image"], comp.inputs["Image"])
 
 CAMERAS = {
     # name: (location, look_at, focal_mm)
@@ -901,7 +977,10 @@ def place_camera():
     cam_data.lens = mm
     cam_data.dof.use_dof = True
     cam_data.dof.focus_distance = (Vector(look) - Vector(loc)).length
-    cam_data.dof.aperture_fstop = 4.0
+    # Wider apertures on the tight equipment/operator shots for cinematic falloff;
+    # deeper on the wide room shots so the whole space stays readable.
+    tight = args.camera in ('equipment', 'operator', 'brew_lab')
+    cam_data.dof.aperture_fstop = 2.4 if tight else 3.5
     cam = bpy.data.objects.new("Cam", cam_data)
     cam.location = loc
     bpy.context.scene.collection.objects.link(cam)
