@@ -351,11 +351,19 @@ def build_shell():
     # Near wall behind camera — dark
     box("WallNear", (ROOM_W, 0.1, ROOM_H), (ROOM_W/2, -0.05, ROOM_H/2), M['wall_dark'])
 
-    # Ceiling warm cove panel running down center-left
-    cove = box("CovePanel", (0.5, ROOM_L-1.0, 0.04), (1.4, ROOM_L/2, ROOM_H-0.06), M['led_soft'])
-    # recessed dark frame around it
-    box("CoveFrame", (0.7, ROOM_L-0.8, 0.12), (1.4, ROOM_L/2, ROOM_H-0.02), M['ceiling'])
-    box("CovePanel2", (0.5, ROOM_L-1.0, 0.04), (1.4, ROOM_L/2, ROOM_H-0.07), M['led_soft'])
+    # Recessed cove channel running down the centre-left: a dark reveal box with
+    # a warm emissive face set inside it (reads as a hidden linear cove).
+    box("CoveChannel", (0.62, ROOM_L-0.8, 0.16), (1.4, ROOM_L/2, ROOM_H-0.06), M['ceiling'])
+    box("CovePanel", (0.46, ROOM_L-1.0, 0.02), (1.4, ROOM_L/2, ROOM_H-0.12), M['led_soft'])
+
+    # Slatted timber ceiling detail over the bar — shallow oak battens running
+    # across the width, the premium 'coffered' read from the reference.
+    oak_c = make_oak("OakCeil", (120, 90, 58))
+    for i in range(18):
+        yy = 0.7 + i * ((ROOM_L-1.4)/17)
+        box(f"CeilSlat{i}", (1.4, 0.045, 0.06), (3.05, yy, ROOM_H-0.04), oak_c)
+    # dark plenum behind the slats so gaps read as shadow
+    box("CeilPlenum", (1.5, ROOM_L-0.6, 0.02), (3.05, ROOM_L/2, ROOM_H-0.005), M['black_matte'])
 
 def build_track_spots():
     # ceiling track over the bar (right side) with warm spot pucks + real area lights
