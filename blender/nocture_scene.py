@@ -81,7 +81,16 @@ def emission_mat(name, color, strength):
     nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
     return mat
 
-def box(name, size, loc, mat=None, rot=(0, 0, 0)):
+def _add_bevel(o, width=0.002, segments=2):
+    """Add a small bevel modifier. This is the single biggest quality boost we
+    can apply procedurally — real edges catch the rim of every light."""
+    m = o.modifiers.new(name='Bevel', type='BEVEL')
+    m.width = width
+    m.segments = segments
+    m.limit_method = 'ANGLE'
+    m.angle_limit = math.radians(30)
+
+def box(name, size, loc, mat=None, rot=(0, 0, 0), bevel=True):
     # primitive_cube_add(size=1) already spans 1 unit, so scale by the full size
     bpy.ops.mesh.primitive_cube_add(size=1, location=loc)
     o = bpy.context.active_object
@@ -91,15 +100,19 @@ def box(name, size, loc, mat=None, rot=(0, 0, 0)):
     if mat:
         o.data.materials.append(mat)
     bpy.ops.object.transform_apply(scale=True, rotation=False, location=False)
+    if bevel and min(size) > 0.05:
+        _add_bevel(o, width=min(0.0035, min(size)*0.04))
     return o
 
-def cyl(name, r, depth, loc, mat=None, rot=(0, 0, 0), verts=48):
+def cyl(name, r, depth, loc, mat=None, rot=(0, 0, 0), verts=48, bevel=True):
     bpy.ops.mesh.primitive_cylinder_add(radius=r, depth=depth, location=loc, vertices=verts)
     o = bpy.context.active_object
     o.name = name
     o.rotation_euler = Euler(rot)
     if mat:
         o.data.materials.append(mat)
+    if bevel and r > 0.03:
+        _add_bevel(o, width=min(0.0025, r*0.04))
     return o
 
 def shade_smooth(o):
@@ -222,6 +235,46 @@ def make_oak(name, tone=(150, 110, 70)):
     nt.links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
     return mat
 
+def make_appliance_black(name):
+    """A nuanced black for the espresso machine / grinder body. Mixes a soft
+    matte base with a thin clearcoat that the Pointiness attribute drives —
+    convex edges read brighter than flat panels, exactly how anodised metal
+    appliances catch room light."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree; nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+    nt.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+    set_in(bsdf, "Base Color", srgb(14,14,16))
+    set_in(bsdf, "Metallic", 0.0)
+    set_in(bsdf, "IOR", 1.55)
+
+    # Pointiness → edge-aware coat (only edges and slight curvature get gloss)
+    geo = nt.nodes.new("ShaderNodeNewGeometry")
+    pmap = nt.nodes.new("ShaderNodeMapRange")
+    pmap.inputs["From Min"].default_value = 0.42
+    pmap.inputs["From Max"].default_value = 0.62
+    pmap.inputs["To Min"].default_value = 0.0
+    pmap.inputs["To Max"].default_value = 0.55
+    nt.links.new(geo.outputs["Pointiness"], pmap.inputs["Value"])
+    nt.links.new(pmap.outputs["Result"], bsdf.inputs["Coat Weight"])
+    set_in(bsdf, "Coat Roughness", 0.10)
+
+    # micro-roughness from a noise so it doesn't read perfectly uniform
+    noise = nt.nodes.new("ShaderNodeTexNoise")
+    noise.inputs["Scale"].default_value = 280.0
+    noise.inputs["Detail"].default_value = 2.0
+    rmap = nt.nodes.new("ShaderNodeMapRange")
+    rmap.inputs["From Min"].default_value = 0.2
+    rmap.inputs["From Max"].default_value = 0.8
+    rmap.inputs["To Min"].default_value = 0.36
+    rmap.inputs["To Max"].default_value = 0.44
+    nt.links.new(noise.outputs["Fac"], rmap.inputs["Value"])
+    nt.links.new(rmap.outputs["Result"], bsdf.inputs["Roughness"])
+
+    return mat
+
 # Materials are created AFTER clear_scene() (factory reset wipes datablocks).
 M = {}
 
@@ -234,7 +287,7 @@ def make_materials():
     M['black_matte'] = principled("BlackMatte", srgb(14,14,15), metallic=0.1, rough=0.55)
     M['black_satin'] = principled("BlackSatin", srgb(20,20,22), metallic=0.4, rough=0.32, coat=0.3)
     # sleek appliance black — reads its form through soft highlights, not flat
-    M["black_deep"]  = principled("BlackDeep", srgb(15,15,17), metallic=0.0, rough=0.4, coat=0.0)
+    M["black_deep"]  = make_appliance_black("BlackDeep")
     M['chrome'] = principled("Chrome", srgb(232,232,235), metallic=1.0, rough=0.06)
     M['brass']  = principled("Brass", srgb(196,150,80), metallic=1.0, rough=0.18)
     M['steel']  = principled("Steel", srgb(180,180,184), metallic=1.0, rough=0.25)
@@ -390,9 +443,14 @@ def build_espresso(loc):
         cyl("SteamKnob", 0.022, 0.03, (x+0.05, sy, z+0.30), M['black_matte'], rot=(0, math.radians(90), 0))
     # tiny warm LM badge slot — just a hint, not a glowing panel
     box("EspBadge", (0.008, 0.06, 0.014), (x-BD/2-0.012, y, z+0.30), M["badge"])
-    # cups warming on the top rail
-    for j, cy2 in enumerate([y-0.22, y-0.07, y+0.08, y+0.23]):
+    # brushed-steel control trim panel under the cup rail (catches highlights)
+    box("EspTrim", (0.02, BW-0.16, 0.012), (x-BD/2-0.014, y, z+0.355), M['steel'])
+    # cups warming on the top rail (varied heights for visual interest)
+    for j, cy2 in enumerate([y-0.27, y-0.10, y+0.07, y+0.24]):
         cyl(f"WarmCup{j}", 0.036, 0.045, (x+0.12, cy2, z+0.585), M['black_satin'], verts=32)
+        cyl(f"WarmSaucer{j}", 0.05, 0.005, (x+0.12, cy2, z+0.585+0.024), M['chrome'], verts=32)
+    # drip tray detail — a thin bright rim along the front-bottom of the body
+    box("EspDripLip", (BD-0.10, BW-0.04, 0.008), (x, y, z+0.05), M['chrome'])
 
 def build_grinder(loc):
     """Tall on-demand grinder (Mythos/Mazzer-style), front faces -X."""
@@ -508,25 +566,55 @@ def build_plant(loc):
 # ----------------------------------------------------------------------------- speaker wall (far)
 def build_speaker_wall():
     cx = ROOM_W/2; y = ROOM_L-0.12
-    # central black recessed baffle
-    box("SpkBaffle", (1.1, 0.12, 2.0), (cx, y, 1.2), M['black_matte'])
-    box("SpkInset", (0.9, 0.06, 1.8), (cx, y-0.04, 1.2), M['felt_green'])
-    # stacked drivers (4 woofers + tweeter)
-    for i, zz in enumerate([0.7, 1.15, 1.6, 2.0]):
-        r = 0.22 if zz < 1.9 else 0.12
-        cyl(f"Drv{i}", r, 0.08, (cx, y-0.06, zz), M['black_satin'], rot=(math.radians(90),0,0))
-        cyl(f"DrvCone{i}", r*0.7, 0.04, (cx, y-0.09, zz), M['speaker_cone'], rot=(math.radians(90),0,0))
-        cyl(f"DrvCap{i}", r*0.25, 0.05, (cx, y-0.12, zz), M['black_matte'], rot=(math.radians(90),0,0))
-    # flanking oak-slat columns
-    for sx in [cx-0.85, cx+0.85]:
-        for j in range(8):
-            box(f"SpkSlat{sx}{j}", (0.05, 0.05, 1.9), (sx + (j-4)*0.06, y, 1.2), M['oak'])
-    # warm niche shelves on either side with bottles
-    for sx in [cx-1.3, cx+1.3]:
-        for k, zz in enumerate([0.9, 1.5, 2.1]):
-            box(f"Niche{sx}{k}", (0.5, 0.28, 0.03), (sx, y-0.1, zz), M['oak'])
-            box(f"NicheLED{sx}{k}", (0.46, 0.02, 0.02), (sx, y-0.22, zz+0.13), M['led_soft'])
-            cyl(f"Bot{sx}{k}", 0.04, 0.26, (sx-0.1, y-0.1, zz+0.15), M['glass'])
+    # central black recessed baffle, slightly inset
+    box("SpkBaffle", (1.05, 0.10, 2.2), (cx, y, 1.25), M['black_matte'])
+    # green felt acoustic backing visible at edges
+    box("SpkFelt", (0.85, 0.04, 2.05), (cx, y-0.03, 1.25), M['felt_green'])
+    # drivers — 4 woofers stacked + horn tweeter at the very top
+    z_woofers = [0.55, 1.05, 1.55, 2.05]
+    for i, zz in enumerate(z_woofers):
+        r = 0.20
+        # recessed mounting ring (slightly proud black)
+        cyl(f"DrvRing{i}", r+0.018, 0.018, (cx, y-0.06, zz), M['black_matte'], rot=(math.radians(90),0,0))
+        # surround / basket
+        cyl(f"DrvBasket{i}", r, 0.05, (cx, y-0.07, zz), M['black_satin'], rot=(math.radians(90),0,0))
+        # the paper cone (slightly off-white)
+        cyl(f"DrvCone{i}", r*0.78, 0.022, (cx, y-0.10, zz), M['speaker_cone'], rot=(math.radians(90),0,0))
+        # dust cap
+        cyl(f"DrvCap{i}", r*0.30, 0.038, (cx, y-0.12, zz), M['black_matte'], rot=(math.radians(90),0,0))
+    # horn tweeter slot (above woofers)
+    box("HornBody", (0.4, 0.05, 0.16), (cx, y-0.05, 2.6), M['black_matte'])
+    box("HornMouth", (0.36, 0.02, 0.12), (cx, y-0.08, 2.6), M['black_satin'])
+
+    # flanking oak slat columns (taller, narrower battens)
+    for sx in [cx-0.78, cx+0.78]:
+        for j in range(6):
+            box(f"SpkSlat{sx}{j}", (0.05, 0.06, 2.3), (sx + (j-2.5)*0.07, y-0.03, 1.3), M['oak'])
+
+    # framed art either side of the speaker (vertical rectangles)
+    for sx in [cx-1.55, cx+1.55]:
+        # frame
+        box(f"ArtFrame_{sx}", (0.5, 0.025, 0.65), (sx, y-0.05, 1.45), M['oak_dark'])
+        # canvas (warm-coloured abstract)
+        box(f"ArtCanvas_{sx}", (0.44, 0.005, 0.58), (sx, y-0.07, 1.45), M['oak'])
+
+    # warm niche shelves on either side with bottles (lower band)
+    for sx in [cx-1.55, cx+1.55]:
+        for k, zz in enumerate([0.55, 0.95]):
+            box(f"Niche{sx}{k}", (0.5, 0.28, 0.025), (sx, y-0.18, zz), M['oak'])
+            box(f"NicheLED{sx}{k}", (0.46, 0.015, 0.012), (sx, y-0.30, zz+0.12), M['led_soft'])
+            # 3 bottles per shelf
+            for b, bx in enumerate([-0.16, -0.02, 0.14]):
+                cyl(f"Bot{sx}{k}{b}", 0.035, 0.24, (sx+bx, y-0.18, zz+0.14), M['glass'])
+                cyl(f"BotCap{sx}{k}{b}", 0.024, 0.025, (sx+bx, y-0.18, zz+0.27), M['brass'])
+
+    # subtle pendant fixture in front of the speaker wall (small visible cone)
+    cyl("PendantCord", 0.004, 0.7, (cx, y-0.65, 2.7), M['black_matte'])
+    cyl("PendantShade", 0.06, 0.12, (cx, y-0.65, 2.35), M['oak_dark'])
+    pl = bpy.data.lights.new("PendantL", type='POINT')
+    pl.energy=18; pl.color=(1.0,0.78,0.5); pl.shadow_soft_size=0.06
+    plo = bpy.data.objects.new("PendantL", pl); plo.location=(cx, y-0.65, 2.28)
+    bpy.context.scene.collection.objects.link(plo)
 
 # ----------------------------------------------------------------------------- world + render
 def setup_world():
