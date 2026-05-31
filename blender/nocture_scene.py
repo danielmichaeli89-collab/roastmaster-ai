@@ -323,7 +323,7 @@ def make_materials():
     M['ceiling']= principled("Ceiling", srgb(16,15,15), rough=0.85)
     M['wall_dark']= principled("WallDark", srgb(22,22,22), rough=0.8)
     M['felt_green']= principled("FeltGreen", srgb(18,30,26), rough=0.9)
-    M['leaf']   = principled("Leaf", srgb(30,46,28), rough=0.55)
+    M['leaf']   = principled("Leaf", srgb(26,44,26), rough=0.42, transmission=0.12, coat=0.18, coat_rough=0.25)
     M['led']    = emission_mat("LED2700", srgb(255, 196, 120), 22.0)
     M['led_soft']= emission_mat("LEDsoft", srgb(255, 188, 120), 9.0)
     M['lamp_hot']= emission_mat("LampHot", srgb(255, 210, 150), 60.0)
@@ -573,30 +573,65 @@ def build_seating():
     # a plant near the front
     build_plant((1.2, 1.3, 0))
 
+def _make_leaf(name, length, width, mat):
+    """A single curved leaf as a low-poly strip, gently cupped along its length."""
+    bm = bmesh.new()
+    segs = 5
+    verts_l, verts_r = [], []
+    for i in range(segs + 1):
+        t = i / segs
+        # taper to a point at both ends, widest in the middle-third
+        w = width * math.sin(min(1.0, t * 1.15) * math.pi) ** 0.7
+        # cup + droop
+        z = -0.10 * length * (t ** 1.6) + 0.04 * length * math.sin(t * math.pi)
+        verts_l.append(bm.verts.new((-w / 2, t * length, z + 0.01 * w)))
+        verts_r.append(bm.verts.new((w / 2, t * length, z + 0.01 * w)))
+    for i in range(segs):
+        bm.faces.new((verts_l[i], verts_r[i], verts_r[i + 1], verts_l[i + 1]))
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me); bm.free()
+    o = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(o)
+    o.data.materials.append(mat)
+    shade_smooth(o)
+    # thin solidify so leaves aren't paper-zero thickness
+    sol = o.modifiers.new('Sol', 'SOLIDIFY'); sol.thickness = 0.004
+    return o
+
 def build_plant(loc):
+    """A potted leafy plant built from many individual curved leaves radiating
+    from a few stems — reads as real foliage, not blobs."""
     x, y, z = loc
-    cyl("Pot", 0.2, 0.5, (x, y, z+0.25), M['black_matte'])
-    cyl("PotRim", 0.21, 0.06, (x, y, z+0.49), M['black_satin'])
-    # foliage as a cluster of low-poly ico blobs (reads as a leafy shrub)
-    random.seed(3)
-    for i in range(7):
-        bx = x + random.uniform(-0.18, 0.18)
-        by = y + random.uniform(-0.18, 0.18)
-        bz = z + 0.7 + random.uniform(0.0, 0.55)
-        r = random.uniform(0.18, 0.3)
-        bpy.ops.mesh.primitive_ico_sphere_add(radius=r, subdivisions=2, location=(bx, by, bz))
-        o = bpy.context.active_object
-        o.name = f"Foliage{i}"
-        o.scale = (1.0, 1.0, random.uniform(1.2, 1.7))
-        # roughen the blob a touch
-        for v in o.data.vertices:
-            v.co += Vector((random.uniform(-0.03,0.03), random.uniform(-0.03,0.03), random.uniform(-0.03,0.03)))
-        o.data.materials.append(M['leaf'])
-        shade_smooth(o)
-    # a couple of tall stems
-    for i in range(3):
-        cyl(f"Stem{i}", 0.012, 1.0, (x+random.uniform(-0.1,0.1), y+random.uniform(-0.1,0.1), z+0.7),
-            M['oak_dark'], rot=(random.uniform(-0.2,0.2), random.uniform(-0.2,0.2), 0))
+    # tapered pot
+    cyl("Pot", 0.19, 0.46, (x, y, z+0.23), M['black_matte'])
+    cyl("PotRim", 0.205, 0.05, (x, y, z+0.45), M['black_satin'])
+    cyl("Soil", 0.17, 0.03, (x, y, z+0.46), M['black_matte'])
+    random.seed(11)
+    # several arching stems, each carrying a fan of leaves
+    n_stems = 6
+    for s in range(n_stems):
+        base_ang = (s / n_stems) * math.tau + random.uniform(-0.3, 0.3)
+        lean = random.uniform(0.15, 0.5)
+        stem_h = random.uniform(0.5, 0.95)
+        sx = x + math.cos(base_ang) * 0.04
+        sy = y + math.sin(base_ang) * 0.04
+        # leaves along the stem
+        n_leaves = random.randint(4, 6)
+        for l in range(n_leaves):
+            t = (l + 1) / (n_leaves + 1)
+            lz = z + 0.47 + stem_h * t
+            length = random.uniform(0.22, 0.4) * (1.15 - 0.4 * t)
+            width = length * random.uniform(0.26, 0.4)
+            leaf = _make_leaf(f"Leaf_{s}_{l}", length, width, M['leaf'])
+            leaf.location = (sx + math.cos(base_ang) * lean * t,
+                             sy + math.sin(base_ang) * lean * t, lz)
+            # orient outward + random roll, drooping tips
+            leaf.rotation_euler = (
+                math.radians(random.uniform(35, 75)),
+                random.uniform(-0.4, 0.4),
+                base_ang + random.uniform(-0.5, 0.5),
+            )
+            leaf.scale = (1, 1, 1)
 
 # ----------------------------------------------------------------------------- speaker wall (far)
 def build_speaker_wall():
@@ -712,7 +747,7 @@ CAMERAS = {
     'counter_hero': ((1.6, 0.6, 1.5), (3.0, 4.5, 1.1), 24),
     'entrance':     ((2.0, 0.7, 1.55), (2.2, 5.5, 1.2), 24),
     'equipment':    ((1.95, 1.75, 1.42), (3.05, 3.15, 1.12), 40),
-    'brew_lab':     ((2.0, 4.6, 1.4), (3.3, 3.6, 1.05), 38),
+    'brew_lab':     ((1.7, 5.4, 1.55), (3.05, 3.7, 1.2), 40),
     'seating':      ((2.6, 4.5, 1.45), (0.6, 2.5, 1.0), 30),
     'audiophile':   ((2.0, 3.0, 1.5), (2.0, 7.0, 1.3), 35),
     'operator':     ((3.1, 3.0, 1.55), (1.5, 1.0, 1.0), 28),
