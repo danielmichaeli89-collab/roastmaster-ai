@@ -18,3 +18,7 @@ pnpm-debug.log*
 .idea
 .vscode/*
 !.vscode/extensions.json
+
+# blender render outputs
+blender/out/
+*.blend1
